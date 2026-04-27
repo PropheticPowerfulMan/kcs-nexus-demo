@@ -62,17 +62,17 @@ const fr = {
     programs: {
       elementary: {
         title: 'École Primaire',
-        grades: 'Classes K–5',
+        grades: 'K1-K5',
         desc: "Construire une base solide grâce à un apprentissage engageant et intégré à la foi.",
       },
       middle: {
         title: 'Collège',
-        grades: 'Classes 6–8',
+        grades: 'Grades 6-8',
         desc: "Naviguer l'adolescence avec défi académique et croissance spirituelle.",
       },
       high: {
         title: 'Lycée',
-        grades: 'Classes 9–12',
+        grades: 'Grades 9-12',
         desc: "Préparer les élèves aux meilleures universités mondiales avec des cours AP et honors.",
       },
     },

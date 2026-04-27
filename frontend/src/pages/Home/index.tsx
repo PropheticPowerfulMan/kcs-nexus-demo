@@ -7,6 +7,7 @@ import {
   ChevronDown, Star, Play, GraduationCap, Heart,
   Zap, Shield, TrendingUp, Calendar
 } from 'lucide-react'
+import { SCHOOL_DIVISIONS } from '@/constants/schoolLevels'
 
 // ─── Animation Variants ───────────────────────────────────────────────────────
 const fadeUp = {
@@ -43,8 +44,8 @@ const AnimatedSection = ({ children, className = '' }: { children: React.ReactNo
 
 // ─── Stats Data ───────────────────────────────────────────────────────────────
 const stats = [
-  { value: 'K-12', label: 'Christian Education', icon: Users },
-  { value: '4', label: 'Programs', icon: Award },
+  { value: 'K1-G12', label: 'Christian Education', icon: Users },
+  { value: '17', label: 'Levels Offered', icon: Award },
   { value: '2', label: 'Official Phones', icon: Star },
   { value: 'DRC', label: 'Kinshasa Campus', icon: Globe },
 ]
@@ -52,25 +53,25 @@ const stats = [
 // ─── Programs ────────────────────────────────────────────────────────────────
 const programs = [
   {
-    level: 'Early Years',
+    level: SCHOOL_DIVISIONS[0].levels,
     title: 'Kindergarten',
-    desc: 'Planting seeds of faith and knowledge while nurturing young hearts, minds, and Christ-like character.',
+    desc: SCHOOL_DIVISIONS[0].description,
     color: 'from-kcs-gold-500 to-kcs-blue-500',
     icon: '✦',
     highlights: ['Early Literacy', 'Faith Formation', 'Creative Play', 'Character Growth'],
   },
   {
-    level: 'Elementary',
+    level: SCHOOL_DIVISIONS[1].levels,
     title: 'Elementary',
-    desc: 'Providing a strong academic foundation while fostering spiritual growth, moral integrity, and love for God and others.',
+    desc: SCHOOL_DIVISIONS[1].description,
     color: 'from-kcs-blue-600 to-blue-700',
     icon: '✦',
     highlights: ['Core Academics', 'Bible Learning', 'Moral Integrity', 'Love of Learning'],
   },
   {
-    level: 'Middle & High',
-    title: 'Middle and High School',
-    desc: 'Equipping students with rigorous academics, biblical principles, spiritual maturity, and servant leadership.',
+    level: `${SCHOOL_DIVISIONS[2].levels}, ${SCHOOL_DIVISIONS[3].levels}`,
+    title: 'Middle & High School',
+    desc: 'Equipping students from Grade 6 through Grade 12 with rigorous academics, biblical principles, spiritual maturity, and servant leadership.',
     color: 'from-kcs-blue-800 to-kcs-blue-950',
     icon: '✦',
     highlights: ['Leadership', 'Academic Rigor', 'Spiritual Maturity', 'Future Readiness'],
@@ -269,7 +270,7 @@ const HomePage = () => {
                 <span className="text-gradient-blue">Programs</span>
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-                A comprehensive Christian education from Kindergarten through High School,
+                A comprehensive Christian education from K1 through Grade 12,
                 designed for academic growth, spiritual maturity, and strong moral character.
               </p>
             </motion.div>
@@ -286,7 +287,7 @@ const HomePage = () => {
                   <div className="p-8">
                     <div className="text-4xl mb-4">{program.icon}</div>
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${program.color} text-white mb-3`}>
-                      Grades {program.level}
+                      {program.level}
                     </span>
                     <h3 className="text-xl font-bold font-display text-kcs-blue-900 dark:text-white mb-2">
                       {program.title}

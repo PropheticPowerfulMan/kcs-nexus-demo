@@ -62,17 +62,17 @@ const en = {
     programs: {
       elementary: {
         title: 'Elementary School',
-        grades: 'Grades K–5',
+        grades: 'K1-K5',
         desc: 'Building a strong foundation through engaging, faith-integrated learning.',
       },
       middle: {
         title: 'Middle School',
-        grades: 'Grades 6–8',
+        grades: 'Grades 6-8',
         desc: 'Navigating adolescence with academic challenge and spiritual growth.',
       },
       high: {
         title: 'High School',
-        grades: 'Grades 9–12',
+        grades: 'Grades 9-12',
         desc: 'Preparing students for top universities worldwide with AP and honors courses.',
       },
     },

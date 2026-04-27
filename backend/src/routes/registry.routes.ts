@@ -6,6 +6,12 @@ import { ApiError, asyncHandler, success } from '../utils/api.js'
 
 export const registryRouter = Router()
 
+const schoolLevels = [
+  'K1', 'K2', 'K3', 'K4', 'K5',
+  'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
+  'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
+] as const
+
 const registerFamilySchema = z.object({
   parent: z.object({
     firstName: z.string().min(1),
@@ -19,7 +25,7 @@ const registerFamilySchema = z.object({
     lastName: z.string().min(1),
     email: z.string().email().optional(),
     studentNumber: z.string().min(2),
-    grade: z.string().min(1),
+    grade: z.enum(schoolLevels),
     section: z.string().default('A'),
   }),
 })

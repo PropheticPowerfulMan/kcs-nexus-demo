@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import { BookOpen, Mail, Phone, Plus, Search, UserRound, Users } from 'lucide-react'
 import PortalSidebar from '@/components/layout/PortalSidebar'
+import { SCHOOL_LEVELS } from '@/constants/schoolLevels'
 
 const initialFamilies = [
   {
@@ -23,7 +24,7 @@ const initialFamilies = [
   {
     id: '3',
     studentNumber: 'KCS-0407',
-    grade: 'Grade 4',
+    grade: 'K4',
     section: 'A',
     student: { firstName: 'Amani', lastName: 'Mbuyi', email: 'amani.mbuyi@students.kcs.local' },
     parents: [{ relation: 'Father', parent: { firstName: 'Joel', lastName: 'Mbuyi', email: 'joel.mbuyi@email.com', phone: '+243 82 000 2204' } }],
@@ -107,7 +108,6 @@ const SchoolRegistryPage = () => {
                 ['studentFirst', 'Student first name'],
                 ['studentLast', 'Student last name'],
                 ['studentNumber', 'Student number'],
-                ['grade', 'Grade'],
                 ['parentFirst', 'Parent first name'],
                 ['parentLast', 'Parent last name'],
                 ['parentEmail', 'Parent email'],
@@ -121,6 +121,12 @@ const SchoolRegistryPage = () => {
                   className="input-kcs"
                 />
               ))}
+              <select value={form.grade} onChange={(event) => setForm({ ...form, grade: event.target.value })} className="input-kcs">
+                <option value="">Select level</option>
+                {SCHOOL_LEVELS.map((level) => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
               <select value={form.section} onChange={(event) => setForm({ ...form, section: event.target.value })} className="input-kcs">
                 <option>A</option>
                 <option>B</option>

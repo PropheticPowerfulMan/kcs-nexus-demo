@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import { ArrowRight, BookOpen, Microscope, Palette, Trophy, Calculator, Globe, Music, Code } from 'lucide-react'
+import { SCHOOL_DIVISIONS } from '@/constants/schoolLevels'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -22,44 +23,58 @@ const AnimSection = ({ children, className = '' }: { children: React.ReactNode; 
 
 const programs = [
   {
-    id: 'elementary',
-    level: 'K–5',
-    title: 'Elementary School',
+    id: 'kindergarten',
+    level: SCHOOL_DIVISIONS[0].levels,
+    title: SCHOOL_DIVISIONS[0].title,
     emoji: '🌱',
-    tagline: 'Building Strong Foundations',
+    tagline: 'Nurturing Early Learners',
     color: 'from-green-500 to-emerald-600',
     textColor: 'text-green-700 dark:text-green-400',
     bg: 'bg-green-50 dark:bg-green-900/20',
     image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&q=80',
-    description: 'Our elementary program nurtures every child\'s love of learning through engaging, faith-integrated instruction. We build literacy, numeracy, and character through a vibrant and supportive environment.',
-    subjects: ['English Language Arts', 'Mathematics', 'Science', 'Social Studies', 'Bible & Chapel', 'Art & Music', 'Physical Education', 'French Language'],
-    highlights: ['Small class sizes (max 18)', 'Certified American teachers', 'Daily Bible curriculum', 'STEAM integration', 'Character education', 'After-school programs'],
+    description: SCHOOL_DIVISIONS[0].description,
+    subjects: ['Early Literacy', 'Early Numeracy', 'Bible & Chapel', 'Creative Play', 'Music & Movement', 'French Exposure'],
+    highlights: ['K1 through K5 progression', 'Play-based learning', 'Faith and character formation', 'Readiness for Grade 1', 'Close parent communication', 'Safe early-years routines'],
   },
   {
-    id: 'middle',
-    level: '6–8',
-    title: 'Middle School',
-    emoji: '🔬',
-    tagline: 'Growing in Knowledge & Character',
+    id: 'elementary',
+    level: SCHOOL_DIVISIONS[1].levels,
+    title: SCHOOL_DIVISIONS[1].title,
+    emoji: '📘',
+    tagline: 'Building Strong Foundations',
     color: 'from-kcs-blue-500 to-blue-700',
     textColor: 'text-kcs-blue-600 dark:text-kcs-blue-400',
     bg: 'bg-kcs-blue-50 dark:bg-kcs-blue-900/20',
     image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600&q=80',
-    description: 'Middle school at KCS is designed to challenge and support students through the pivotal adolescent years. We offer Pre-AP courses, student leadership, and a robust extracurricular program.',
+    description: SCHOOL_DIVISIONS[1].description,
+    subjects: ['English Language Arts', 'Mathematics', 'Science', 'Social Studies', 'Bible & Chapel', 'Art & Music', 'Physical Education', 'French Language'],
+    highlights: ['Grade 1 through Grade 5', 'Strong literacy and numeracy', 'Daily Bible curriculum', 'STEAM integration', 'Character education', 'After-school programs'],
+  },
+  {
+    id: 'middle',
+    level: SCHOOL_DIVISIONS[2].levels,
+    title: SCHOOL_DIVISIONS[2].title,
+    emoji: '🔬',
+    tagline: 'Growing in Knowledge & Character',
+    color: 'from-cyan-500 to-kcs-blue-700',
+    textColor: 'text-kcs-blue-600 dark:text-kcs-blue-400',
+    bg: 'bg-kcs-blue-50 dark:bg-kcs-blue-900/20',
+    image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600&q=80',
+    description: SCHOOL_DIVISIONS[2].description,
     subjects: ['Advanced English', 'Pre-Algebra & Algebra', 'Life & Earth Science', 'World History', 'Bible Studies', 'Visual Arts', 'Band & Orchestra', 'Computer Science'],
     highlights: ['Pre-AP coursework', 'Student government', 'Service learning projects', 'Sports teams', 'Annual science fair', 'Leadership retreats'],
   },
   {
     id: 'high',
-    level: '9–12',
-    title: 'High School',
+    level: SCHOOL_DIVISIONS[3].levels,
+    title: SCHOOL_DIVISIONS[3].title,
     emoji: '🎓',
     tagline: 'Ready for the World Stage',
     color: 'from-kcs-blue-800 to-kcs-blue-950',
     textColor: 'text-kcs-blue-800 dark:text-kcs-blue-300',
     bg: 'bg-kcs-blue-100 dark:bg-kcs-blue-900/30',
     image: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=600&q=80',
-    description: 'KCS High School prepares students for admission to top universities worldwide. With Advanced Placement courses, comprehensive college counseling, and internship opportunities, our graduates are ready for anything.',
+    description: SCHOOL_DIVISIONS[3].description,
     subjects: ['AP English & Literature', 'AP Calculus & Statistics', 'AP Biology & Chemistry', 'AP World & US History', 'AP Economics', 'Senior Bible & Ethics', 'Journalism & Media', 'Coding & AI Fundamentals'],
     highlights: ['10+ AP courses offered', 'Dedicated college counselor', '98% college acceptance rate', 'SAT/ACT preparation', 'Internship programs', 'National Honor Society'],
   },
@@ -76,8 +91,10 @@ const departments = [
   { icon: Trophy, name: 'Athletics', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
 ]
 
+type ProgramId = (typeof programs)[number]['id']
+
 const AcademicsPage = () => {
-  const [activeTab, setActiveTab] = useState<'elementary' | 'middle' | 'high'>('elementary')
+  const [activeTab, setActiveTab] = useState<ProgramId>('kindergarten')
   const activeProgram = programs.find((p) => p.id === activeTab)!
 
   return (
@@ -119,7 +136,7 @@ const AcademicsPage = () => {
                 <span className="text-2xl">{p.emoji}</span>
                 <div className="text-left">
                   <p className="text-sm leading-tight">{p.title}</p>
-                  <p className={`text-xs ${activeTab === p.id ? 'text-white/80' : 'text-gray-400'}`}>Grades {p.level}</p>
+                  <p className={`text-xs ${activeTab === p.id ? 'text-white/80' : 'text-gray-400'}`}>{p.level}</p>
                 </div>
               </button>
             ))}
@@ -143,7 +160,7 @@ const AcademicsPage = () => {
             </div>
             <div>
               <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-bold mb-3 ${activeProgram.bg} ${activeProgram.textColor}`}>
-                Grades {activeProgram.level}
+                {activeProgram.level}
               </span>
               <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white mb-2">
                 {activeProgram.title}
@@ -270,7 +287,7 @@ const AcademicsPage = () => {
                 Start Your Academic Journey at KCS
               </h2>
               <p className="text-kcs-blue-100 mb-8 max-w-xl mx-auto">
-                Applications are open for all grade levels. Join a community of learners who dare to excel.
+                Applications are open from K1 through Grade 12. Join a community of learners who dare to excel.
               </p>
               <Link to="/admissions" className="btn-gold inline-flex items-center gap-2 text-base px-8 py-4 rounded-2xl">
                 Apply Now <ArrowRight size={20} />

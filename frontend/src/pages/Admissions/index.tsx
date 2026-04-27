@@ -7,6 +7,7 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { SCHOOL_DIVISIONS, SCHOOL_LEVELS } from '@/constants/schoolLevels'
 
 /* ────────────── Animation helpers ────────────── */
 const fadeUp = {
@@ -46,12 +47,13 @@ const requirements = [
   'Additional comments for the admissions team',
 ]
 
-const programs = [
-  { name: 'Kindergarten', grades: 'Early Years', age: 'Young learners', tuition: 'Faith & knowledge', spots: 8 },
-  { name: 'Elementary', grades: 'Primary grades', age: 'Children', tuition: 'Strong foundation', spots: 12 },
-  { name: 'Middle School', grades: 'Middle grades', age: 'Early teens', tuition: 'Knowledge & character', spots: 6 },
-  { name: 'High School', grades: 'Secondary grades', age: 'Teens', tuition: 'Future readiness', spots: 10 },
-]
+const programs = SCHOOL_DIVISIONS.map((division, index) => ({
+  name: division.title,
+  grades: division.levels,
+  age: index === 0 ? 'Early learners' : index === 1 ? 'Primary learners' : index === 2 ? 'Adolescents' : 'Teens',
+  tuition: index === 0 ? 'Faith & readiness' : index === 1 ? 'Strong foundation' : index === 2 ? 'Knowledge & character' : 'Future readiness',
+  spots: [8, 12, 6, 10][index],
+}))
 
 /* ────────────── Zod Form Schema ────────────── */
 const STEPS = ['Student', 'Parent', 'Documents', 'Review'] as const
@@ -302,7 +304,7 @@ const AdmissionsPage = () => {
                             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Applying for Grade *</label>
                             <select {...studentForm.register('applyingGrade')} className="input-kcs">
                               <option value="">Select grade...</option>
-                              {['PreK', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map(g => (
+                              {SCHOOL_LEVELS.map(g => (
                                 <option key={g} value={g}>{g}</option>
                               ))}
                             </select>
