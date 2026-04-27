@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
-  Menu, X, Sun, Moon, Globe, Bell, ChevronDown,
+  Menu, X, Sun, Moon, Globe, Bell,
   GraduationCap, BookOpen, Users, Home, Phone, Image, Newspaper, LogIn
 } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
@@ -26,14 +26,16 @@ const Header = () => {
     setMobileOpen(false)
   }, [location.pathname])
 
+  const currentLanguage = (i18n.resolvedLanguage || language).startsWith('fr') ? 'fr' : 'en'
+
   const toggleLanguage = () => {
-    const next = language === 'en' ? 'fr' : 'en'
+    const next = currentLanguage === 'en' ? 'fr' : 'en'
     setLanguage(next)
     i18n.changeLanguage(next)
   }
 
   const isHomePage = location.pathname === '/'
-  const logoSrc = `${import.meta.env.BASE_URL}images/kcs-logo.png`
+  const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
 
   const navItems = [
     { to: '/', label: t('nav.home'), icon: Home },
@@ -59,11 +61,11 @@ const Header = () => {
         >
           {/* Logo */}
           <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-kcs ring-1 ring-kcs-blue-700/20 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg">
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white p-1 shadow-kcs ring-1 ring-kcs-blue-700/20 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg">
               <img
                 src={logoSrc}
                 alt="Kinshasa Christian School"
-                className="absolute left-0 top-0 h-full max-w-none object-cover"
+                className="h-full w-full object-contain"
               />
             </div>
             <div className="hidden sm:block">
@@ -119,7 +121,7 @@ const Header = () => {
               aria-label="Changer la langue"
             >
               <Globe size={16} />
-              <span className="hidden sm:inline">{language.toUpperCase()}</span>
+              <span className="hidden sm:inline">{currentLanguage.toUpperCase()}</span>
             </button>
 
             {/* Theme Toggle */}

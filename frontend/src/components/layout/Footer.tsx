@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 
 const Footer = () => {
   const { t } = useTranslation()
-  const logoSrc = `${import.meta.env.BASE_URL}images/kcs-logo.png`
+  const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
 
   const quickLinks = [
     { to: '/about', label: t('nav.about') },
