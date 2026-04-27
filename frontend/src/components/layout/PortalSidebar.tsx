@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
   Users, Settings, Bell, ChevronLeft, ChevronRight,
   GraduationCap, BarChart3, MessageSquare, LogOut,
-  Shield, Home, UserCheck, ClipboardList, Image
+  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -39,6 +39,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
       return [
         ...base,
         { to: '/portal/parent/performance', label: 'Performance', icon: BarChart3 },
+        { to: '/portal/parent/forum', label: 'Parent Forum', icon: MessageSquare },
         { to: '/portal/parent/messages', label: 'Messages', icon: MessageSquare },
         { to: '/portal/parent/calendar', label: 'Calendar', icon: Calendar },
         { to: '/portal/parent/profile', label: 'Profile', icon: UserCheck },
@@ -56,11 +57,13 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
       return [
         ...base,
         { to: '/admin/students', label: 'Students', icon: GraduationCap },
+        { to: '/admin/registry', label: 'Family Registry', icon: LibraryBig },
         { to: '/admin/teachers', label: 'Teachers', icon: Users },
         { to: '/admin/courses', label: 'Courses', icon: BookOpen },
         { to: '/admin/admissions', label: 'Admissions', icon: ClipboardList },
         { to: '/admin/news', label: 'News & Events', icon: FileText },
         { to: '/admin/media', label: 'Media', icon: Image },
+        { to: '/admin/forum-insights', label: 'Parent AI Report', icon: Brain },
         { to: '/admin/analytics', label: 'AI Analytics', icon: Brain },
         { to: '/admin/settings', label: 'Settings', icon: Settings },
       ]

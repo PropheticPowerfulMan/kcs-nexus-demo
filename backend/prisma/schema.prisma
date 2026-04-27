@@ -88,6 +88,9 @@ model User {
   authoredNews       NewsPost[]           @relation("NewsAuthor")
   contactMessages    ContactMessage[]
   refreshTokens      RefreshToken[]
+  forumPosts         ParentForumPost[]    @relation("ForumPostAuthor")
+  forumComments      ParentForumComment[] @relation("ForumCommentAuthor")
+  aiForumReports     AIForumReport[]      @relation("AIForumReportReviewer")
 }
 
 model RefreshToken {
@@ -351,4 +354,50 @@ model AIRecommendation {
   riskLevel   String
   createdAt   DateTime       @default(now())
   student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model ParentForumPost {
+  id           String               @id @default(cuid())
+  authorId     String
+  title        String
+  content      String
+  category     String
+  status       String               @default("open")
+  sentiment    String               @default("neutral")
+  priority     String               @default("normal")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  author       User                 @relation("ForumPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments     ParentForumComment[]
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ParentForumComment {
+  id        String          @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  sentiment String          @default("neutral")
+  createdAt DateTime        @default(now())
+  post      ParentForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User            @relation("ForumCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+model AIForumReport {
+  id             String    @id @default(cuid())
+  title          String
+  summary        String
+  sentiment      String
+  riskLevel      String
+  keyTopics      String[]
+  recommendations String[]
+  actionItems    String[]
+  reviewedById   String?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  reviewedBy     User?     @relation("AIForumReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 }

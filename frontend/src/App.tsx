@@ -12,8 +12,11 @@ import LoginPage from '@/pages/Auth/Login'
 import StudentPortal from '@/pages/StudentPortal'
 import AITutorPage from '@/pages/StudentPortal/AITutor'
 import ParentPortal from '@/pages/ParentPortal'
+import ParentForumPage from '@/pages/ParentForum'
 import TeacherPortal from '@/pages/TeacherPortal'
 import AdminDashboard from '@/pages/Admin'
+import SchoolRegistryPage from '@/pages/Admin/SchoolRegistry'
+import ForumInsightsPage from '@/pages/Admin/ForumInsights'
 import NotFoundPage from '@/pages/NotFound'
 import { useAuthStore } from '@/store/authStore'
 
@@ -110,6 +113,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/portal/parent/forum"
+          element={
+            <ProtectedRoute allowedRoles={['parent', 'admin']}>
+              <ParentForumPage />
+            </ProtectedRoute>
+          }
+        />
         {['performance', 'messages', 'calendar', 'profile', 'grades'].map((segment) => (
           <Route
             key={segment}
@@ -155,6 +166,22 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/registry"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <SchoolRegistryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/forum-insights"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ForumInsightsPage />
             </ProtectedRoute>
           }
         />

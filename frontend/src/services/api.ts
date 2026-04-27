@@ -99,6 +99,20 @@ export const studentsAPI = {
   update: (id: string, data: object) => api.put(`/students/${id}`, data),
 }
 
+// --- Registry API ---
+export const registryAPI = {
+  getFamilies: () => api.get('/registry/families'),
+  registerFamily: (data: object) => api.post('/registry/families', data),
+}
+
+// --- Parent Forum API ---
+export const forumAPI = {
+  getPosts: () => api.get('/forum/posts'),
+  createPost: (data: object) => api.post('/forum/posts', data),
+  addComment: (postId: string, data: object) => api.post(`/forum/posts/${postId}/comments`, data),
+  getAIReport: () => api.get('/forum/ai-report'),
+}
+
 // --- Teachers API ---
 export const teachersAPI = {
   getAll: (params?: object) => api.get('/teachers', { params }),
