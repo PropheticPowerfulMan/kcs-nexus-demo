@@ -113,6 +113,14 @@ export const forumAPI = {
   getAIReport: () => api.get('/forum/ai-report'),
 }
 
+// --- Student Forum API ---
+export const studentForumAPI = {
+  getPosts: () => api.get('/student-forum/posts'),
+  createPost: (data: object) => api.post('/student-forum/posts', data),
+  addComment: (postId: string, data: object) => api.post(`/student-forum/posts/${postId}/comments`, data),
+  getAIReport: () => api.get('/student-forum/ai-report'),
+}
+
 // --- Teachers API ---
 export const teachersAPI = {
   getAll: (params?: object) => api.get('/teachers', { params }),

@@ -11,12 +11,14 @@ import ContactPage from '@/pages/Contact'
 import LoginPage from '@/pages/Auth/Login'
 import StudentPortal from '@/pages/StudentPortal'
 import AITutorPage from '@/pages/StudentPortal/AITutor'
+import StudentForumPage from '@/pages/StudentForum'
 import ParentPortal from '@/pages/ParentPortal'
 import ParentForumPage from '@/pages/ParentForum'
 import TeacherPortal from '@/pages/TeacherPortal'
 import AdminDashboard from '@/pages/Admin'
 import SchoolRegistryPage from '@/pages/Admin/SchoolRegistry'
 import ForumInsightsPage from '@/pages/Admin/ForumInsights'
+import StudentForumInsightsPage from '@/pages/Admin/StudentForumInsights'
 import NotFoundPage from '@/pages/NotFound'
 import { useAuthStore } from '@/store/authStore'
 
@@ -82,6 +84,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['student']}>
               <AITutorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portal/student/forum"
+          element={
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
+              <StudentForumPage />
             </ProtectedRoute>
           }
         />
@@ -182,6 +192,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <ForumInsightsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/student-forum-insights"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <StudentForumInsightsPage />
             </ProtectedRoute>
           }
         />

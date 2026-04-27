@@ -32,6 +32,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/portal/student/assignments', label: 'Assignments', icon: FileText },
         { to: '/portal/student/timetable', label: 'Timetable', icon: Calendar },
         { to: '/portal/student/ai-tutor', label: 'AI Tutor', icon: Brain },
+        { to: '/portal/student/forum', label: 'Student Forum', icon: MessageSquare },
         { to: '/portal/student/messages', label: 'Messages', icon: MessageSquare },
         { to: '/portal/student/profile', label: 'My Profile', icon: UserCheck },
       ]
@@ -64,6 +65,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/admin/news', label: 'News & Events', icon: FileText },
         { to: '/admin/media', label: 'Media', icon: Image },
         { to: '/admin/forum-insights', label: 'Parent AI Report', icon: Brain },
+        { to: '/admin/student-forum-insights', label: 'Student AI Report', icon: Shield },
         { to: '/admin/analytics', label: 'AI Analytics', icon: Brain },
         { to: '/admin/settings', label: 'Settings', icon: Settings },
       ]
