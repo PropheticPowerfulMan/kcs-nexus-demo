@@ -18,5 +18,11 @@ You can customize the commit message:
 .\scripts\session-commit.ps1 -Message "Improve KCS homepage design" -Push
 ```
 
+To publish the frontend to the live GitHub Pages site:
+
+```powershell
+.\scripts\deploy-gh-pages.ps1
+```
+
 The script only commits when there are actual changes. Ignored folders like
 `node_modules` and `dist` stay excluded by `.gitignore`.

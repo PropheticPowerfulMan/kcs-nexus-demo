@@ -5,10 +5,9 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Run-Git {
-  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
-  & git @Args
+  & git @args
   if ($LASTEXITCODE -ne 0) {
-    throw "git $($Args -join ' ') failed with exit code $LASTEXITCODE"
+    throw "git $($args -join ' ') failed with exit code $LASTEXITCODE"
   }
 }
 
@@ -35,14 +34,20 @@ finally {
 $worktreePath = Join-Path $repoRoot ".deploy-gh-pages"
 if (Test-Path $worktreePath) {
   $resolved = (Resolve-Path $worktreePath).Path
-  if (-not $resolved.StartsWith($repoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Refusing to remove unexpected worktree path: $resolved"
+  $rootPrefix = (Resolve-Path $repoRoot).Path.TrimEnd("\", "/") + [System.IO.Path]::DirectorySeparatorChar
+  if (-not $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing to remove unexpected deploy path: $resolved"
   }
-  Run-Git worktree remove --force $worktreePath
+  Remove-Item -LiteralPath $worktreePath -Recurse -Force
+  Run-Git worktree prune
 }
 
-Run-Git fetch origin gh-pages
-Run-Git worktree add -B gh-pages $worktreePath origin/gh-pages
+$originUrl = (& git remote get-url origin).Trim()
+Run-Git clone $originUrl $worktreePath
+& git -C $worktreePath checkout -B gh-pages origin/gh-pages
+if ($LASTEXITCODE -ne 0) {
+  throw "git -C $worktreePath checkout gh-pages failed with exit code $LASTEXITCODE"
+}
 
 Get-ChildItem -LiteralPath $worktreePath -Force |
   Where-Object { $_.Name -ne ".git" } |
@@ -51,12 +56,15 @@ Get-ChildItem -LiteralPath $worktreePath -Force |
 Copy-Item -Path "$repoRoot\frontend\dist\*" -Destination $worktreePath -Recurse -Force
 New-Item -Path (Join-Path $worktreePath ".nojekyll") -ItemType File -Force | Out-Null
 
-Run-Git -C $worktreePath add -A
+& git -C $worktreePath add -A
+if ($LASTEXITCODE -ne 0) {
+  throw "git -C $worktreePath add -A failed with exit code $LASTEXITCODE"
+}
 
 $changes = (& git -C $worktreePath status --porcelain)
 if (-not $changes) {
   Write-Host "No gh-pages changes to deploy."
-  Run-Git worktree remove $worktreePath
+  Remove-Item -LiteralPath $worktreePath -Recurse -Force
   exit 0
 }
 
@@ -65,8 +73,16 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
   $Message = "Deploy GitHub Pages $stamp"
 }
 
-Run-Git -C $worktreePath commit -m $Message
-Run-Git -C $worktreePath push origin gh-pages
-Run-Git worktree remove $worktreePath
+& git -C $worktreePath commit -m $Message
+if ($LASTEXITCODE -ne 0) {
+  throw "git -C $worktreePath commit failed with exit code $LASTEXITCODE"
+}
+
+& git -C $worktreePath push origin HEAD:gh-pages
+if ($LASTEXITCODE -ne 0) {
+  throw "git -C $worktreePath push failed with exit code $LASTEXITCODE"
+}
+
+Remove-Item -LiteralPath $worktreePath -Recurse -Force
 
 Write-Host "GitHub Pages deployed: $Message"
