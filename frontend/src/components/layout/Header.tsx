@@ -33,6 +33,7 @@ const Header = () => {
   }
 
   const isHomePage = location.pathname === '/'
+  const logoSrc = `${import.meta.env.BASE_URL}images/kcs-logo.png`
 
   const navItems = [
     { to: '/', label: t('nav.home'), icon: Home },
@@ -60,7 +61,7 @@ const Header = () => {
           <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-kcs ring-1 ring-kcs-blue-700/20 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg">
               <img
-                src="/images/kcs-logo.png"
+                src={logoSrc}
                 alt="Kinshasa Christian School"
                 className="absolute left-0 top-0 h-full max-w-none object-cover"
               />

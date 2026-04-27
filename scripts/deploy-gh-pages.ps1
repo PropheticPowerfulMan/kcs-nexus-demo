@@ -57,6 +57,7 @@ if (Test-Path "$repoRoot\frontend\dist\.git") {
   Remove-Item -LiteralPath "$repoRoot\frontend\dist\.git" -Recurse -Force
 }
 Copy-Item -Path "$repoRoot\frontend\dist\*" -Destination $worktreePath -Recurse -Force
+Copy-Item -Path (Join-Path $worktreePath "index.html") -Destination (Join-Path $worktreePath "404.html") -Force
 New-Item -Path (Join-Path $worktreePath ".nojekyll") -ItemType File -Force | Out-Null
 
 & git -C $worktreePath add -A

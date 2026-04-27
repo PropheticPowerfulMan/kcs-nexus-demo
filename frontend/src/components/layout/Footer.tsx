@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 
 const Footer = () => {
   const { t } = useTranslation()
+  const logoSrc = `${import.meta.env.BASE_URL}images/kcs-logo.png`
 
   const quickLinks = [
     { to: '/about', label: t('nav.about') },
@@ -82,7 +83,7 @@ const Footer = () => {
             <div className="lg:col-span-1">
               <Link to="/" className="flex items-center gap-3 mb-5">
                 <div className="w-14 h-14 rounded-lg bg-white flex items-center justify-center shadow-kcs p-1.5">
-                  <img src="/images/kcs-logo.png" alt="Kinshasa Christian School" className="h-full w-full object-contain" />
+                  <img src={logoSrc} alt="Kinshasa Christian School" className="h-full w-full object-contain" />
                 </div>
                 <div>
                   <p className="font-bold text-sm leading-tight font-display text-white">
