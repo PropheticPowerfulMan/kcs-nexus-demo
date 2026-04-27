@@ -55,7 +55,7 @@ const programs = [
     level: 'Early Years',
     title: 'Kindergarten',
     desc: 'Planting seeds of faith and knowledge while nurturing young hearts, minds, and Christ-like character.',
-    color: 'from-kcs-gold-500 to-yellow-400',
+    color: 'from-kcs-gold-500 to-kcs-blue-500',
     icon: '✦',
     highlights: ['Early Literacy', 'Faith Formation', 'Creative Play', 'Character Growth'],
   },
@@ -280,7 +280,7 @@ const HomePage = () => {
                   key={program.title}
                   variants={fadeUp}
                   whileHover={{ y: -8 }}
-                  className="relative group bg-white dark:bg-kcs-blue-900/50 rounded-3xl overflow-hidden shadow-kcs hover:shadow-kcs-lg transition-all duration-500 border border-gray-100 dark:border-kcs-blue-800"
+                  className="github-glass dark:github-glass-dark relative group overflow-hidden rounded-3xl transition-all duration-500 hover:-translate-y-1 hover:shadow-kcs-lg"
                 >
                   <div className={`h-2 bg-gradient-to-r ${program.color}`} />
                   <div className="p-8">
@@ -334,7 +334,7 @@ const HomePage = () => {
                     <div className="glass-card p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-kcs-gold-500 rounded-xl flex items-center justify-center">
-                          <BookOpen size={20} className="text-kcs-blue-900" />
+                          <BookOpen size={20} className="text-kcs-blue-950" />
                         </div>
                         <div>
                           <p className="text-white font-semibold text-sm">Spiritual Life at KCS</p>
@@ -349,7 +349,7 @@ const HomePage = () => {
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute -top-6 -right-6 bg-white dark:bg-kcs-blue-900 rounded-2xl p-4 shadow-kcs-lg border border-gray-100 dark:border-kcs-blue-800"
+                  className="github-glass dark:github-glass-dark absolute -top-6 -right-6 rounded-2xl p-4"
                 >
                   <p className="text-3xl font-bold text-kcs-blue-700 dark:text-white font-display">KCS</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Letting Our</p>
@@ -376,7 +376,7 @@ const HomePage = () => {
                     { label: 'Mission', text: 'Raise the next generation of leaders with compassion and mercy' },
                     { label: 'Vision', text: 'Equip passionate, independent, life-long learners with a biblical worldview' },
                   ].map(({ label, text }) => (
-                    <div key={label} className="p-4 rounded-2xl bg-gray-50 dark:bg-kcs-blue-900/50 border border-gray-100 dark:border-kcs-blue-800">
+                    <div key={label} className="github-glass dark:github-glass-dark p-4 rounded-2xl">
                       <p className="text-xs font-bold text-kcs-gold-600 dark:text-kcs-gold-400 uppercase tracking-wider mb-1">{label}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{text}</p>
                     </div>
@@ -444,7 +444,7 @@ const HomePage = () => {
                 </span>
                 <h2 className="text-3xl md:text-4xl font-bold font-display text-white mb-4">
                   Connected School Life{' '}
-                  <span className="text-kcs-gold-400">for KCS</span>
+                  <span className="text-kcs-gold-300">for KCS</span>
                 </h2>
                 <p className="text-kcs-blue-100 leading-relaxed mb-6">
                   KCS Nexus brings the school community together with admissions, announcements,
@@ -527,7 +527,7 @@ const HomePage = () => {
                   key={item.title}
                   variants={fadeUp}
                   whileHover={{ y: -5 }}
-                  className="bg-white dark:bg-kcs-blue-900/50 rounded-2xl overflow-hidden shadow-kcs hover:shadow-kcs-lg transition-all duration-300 border border-gray-100 dark:border-kcs-blue-800 group"
+                  className="github-glass dark:github-glass-dark group overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-kcs-lg"
                 >
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -582,7 +582,7 @@ const HomePage = () => {
                   key={item.name}
                   variants={fadeUp}
                   whileHover={{ y: -5 }}
-                  className="p-6 rounded-2xl bg-gray-50 dark:bg-kcs-blue-900/50 border border-gray-100 dark:border-kcs-blue-800 hover:shadow-kcs transition-all duration-300"
+                  className="github-glass dark:github-glass-dark p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-kcs"
                 >
                   <div className="flex mb-4">
                     {[...Array(5)].map((_, i) => (

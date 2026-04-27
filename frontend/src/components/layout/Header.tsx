@@ -16,9 +16,6 @@ const Header = () => {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [academicsOpen, setAcademicsOpen] = useState(false)
-  const [portalOpen, setPortalOpen] = useState(false)
-
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
@@ -49,18 +46,24 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled || !isHomePage
-          ? 'bg-white/95 dark:bg-kcs-blue-950/95 backdrop-blur-md shadow-kcs border-b border-gray-100 dark:border-kcs-blue-800'
-          : 'bg-transparent'
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 transition-all duration-500"
     >
       <div className="container-custom">
-        <div className="flex items-center justify-between h-20">
+        <div
+          className={`flex h-[76px] items-center justify-between gap-3 rounded-full px-3 sm:px-4 transition-all duration-500 ${
+            scrolled || !isHomePage
+              ? 'github-glass dark:github-glass-dark'
+              : 'border border-white/20 bg-kcs-blue-950/26 shadow-kcs backdrop-blur-2xl'
+          }`}
+        >
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-14 h-14 rounded-lg bg-white flex items-center justify-center shadow-kcs group-hover:shadow-kcs-lg transition-all duration-300 p-1.5">
-              <img src="/images/kcs-logo.png" alt="Kinshasa Christian School" className="h-full w-full object-contain" />
+          <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-kcs ring-1 ring-kcs-blue-700/20 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg">
+              <img
+                src="/images/kcs-logo.png"
+                alt="Kinshasa Christian School"
+                className="absolute left-0 top-0 h-full max-w-none object-cover"
+              />
             </div>
             <div className="hidden sm:block">
               <p className={`font-bold text-sm leading-tight font-display transition-colors duration-300 ${
@@ -72,8 +75,8 @@ const Header = () => {
               </p>
               <p className={`text-xs font-medium transition-colors duration-300 ${
                 scrolled || !isHomePage
-                  ? 'text-kcs-gold-600 dark:text-kcs-gold-400'
-                  : 'text-kcs-gold-300'
+                  ? 'text-kcs-blue-600 dark:text-kcs-gold-300'
+                  : 'text-kcs-gold-100'
               }`}>
                 Letting Our Light Shine
               </p>
@@ -81,20 +84,21 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex">
             {navItems.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  `max-w-[118px] truncate rounded-full px-3 py-2 text-center text-[13px] font-semibold leading-none transition-all duration-200 xl:max-w-none xl:px-3.5 ${
                     isActive
-                      ? 'text-kcs-blue-600 dark:text-kcs-blue-300 bg-kcs-blue-50 dark:bg-kcs-blue-900/30'
+                      ? 'bg-kcs-blue-700 text-white shadow-sm dark:bg-kcs-gold-600 dark:text-kcs-blue-950'
                       : scrolled || !isHomePage
-                      ? 'text-gray-700 dark:text-gray-300 hover:text-kcs-blue-700 dark:hover:text-kcs-blue-300 hover:bg-gray-100 dark:hover:bg-kcs-blue-900/20'
-                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                      ? 'text-kcs-blue-950 dark:text-gray-200 hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:hover:bg-white/10'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`
                 }
+                title={label}
               >
                 {label}
               </NavLink>
@@ -102,15 +106,16 @@ const Header = () => {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                 scrolled || !isHomePage
-                  ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-kcs-blue-900/20'
+                  ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
+              aria-label="Changer la langue"
             >
               <Globe size={16} />
               <span className="hidden sm:inline">{language.toUpperCase()}</span>
@@ -119,11 +124,12 @@ const Header = () => {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-lg transition-all duration-200 ${
+              className={`rounded-full p-2 transition-all duration-200 ${
                 scrolled || !isHomePage
-                  ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-kcs-blue-900/20'
+                  ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
+              aria-label="Changer le theme"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -132,9 +138,9 @@ const Header = () => {
             {isAuthenticated && (
               <Link
                 to="/portal/notifications"
-                className={`relative p-2 rounded-lg transition-all duration-200 ${
+                className={`relative rounded-full p-2 transition-all duration-200 ${
                   scrolled || !isHomePage
-                    ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-kcs-blue-900/20'
+                    ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -153,22 +159,22 @@ const Header = () => {
                 to={`/portal/${user?.role}`}
                 className="hidden sm:flex items-center gap-2 btn-primary text-sm py-2"
               >
-                <div className="w-6 h-6 rounded-full bg-kcs-gold-400 flex items-center justify-center text-kcs-blue-900 text-xs font-bold">
+                <div className="w-6 h-6 rounded-full bg-kcs-gold-500 flex items-center justify-center text-kcs-blue-950 text-xs font-bold">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <span>{t('nav.dashboard')}</span>
               </Link>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <Link to="/login" className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                <Link to="/login" className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                   scrolled || !isHomePage
-                    ? 'text-kcs-blue-700 dark:text-kcs-blue-300 hover:bg-kcs-blue-50 dark:hover:bg-kcs-blue-900/20'
+                    ? 'text-kcs-blue-700 dark:text-kcs-blue-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                     : 'text-white hover:bg-white/10'
                 }`}>
                   <LogIn size={16} />
                   {t('nav.login')}
                 </Link>
-                <Link to="/admissions" className="btn-gold text-sm py-2">
+                <Link to="/admissions" className="rounded-full bg-kcs-blue-700 px-4 py-2 text-sm font-bold text-white shadow-kcs transition-all duration-300 hover:-translate-y-0.5 hover:bg-kcs-blue-800 hover:shadow-kcs-lg dark:bg-kcs-gold-600 dark:text-kcs-blue-950 dark:hover:bg-kcs-gold-700">
                   {t('nav.applyNow')}
                 </Link>
               </div>
@@ -177,11 +183,12 @@ const Header = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={`lg:hidden p-2 rounded-lg transition-all duration-200 ${
+              className={`rounded-full p-2 transition-all duration-200 lg:hidden ${
                 scrolled || !isHomePage
-                  ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-kcs-blue-900/20'
+                  ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white hover:bg-white/10'
               }`}
+              aria-label="Ouvrir le menu"
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -197,9 +204,10 @@ const Header = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="lg:hidden bg-white dark:bg-kcs-blue-950 border-t border-gray-100 dark:border-kcs-blue-800 overflow-hidden"
+            className="lg:hidden overflow-hidden"
           >
-            <div className="container-custom py-4 space-y-1">
+            <div className="container-custom py-3">
+              <div className="github-glass dark:github-glass-dark space-y-1 rounded-[28px] p-3">
               {navItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
@@ -208,7 +216,7 @@ const Header = () => {
                     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-kcs-blue-700 text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-kcs-blue-50 dark:hover:bg-kcs-blue-900/20'
+                        : 'text-kcs-blue-900 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                     }`
                   }
                 >
@@ -227,11 +235,12 @@ const Header = () => {
                     <Link to="/login" className="flex-1 btn-primary text-center text-sm py-2.5">
                       {t('nav.login')}
                     </Link>
-                    <Link to="/admissions" className="flex-1 btn-gold text-center text-sm py-2.5">
+                    <Link to="/admissions" className="flex-1 rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-center text-sm font-bold text-white">
                       {t('nav.applyNow')}
                     </Link>
                   </>
                 )}
+              </div>
               </div>
             </div>
           </motion.div>
