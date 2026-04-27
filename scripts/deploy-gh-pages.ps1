@@ -43,8 +43,8 @@ if (Test-Path $worktreePath) {
 }
 
 $originUrl = (& git remote get-url origin).Trim()
-Run-Git clone $originUrl $worktreePath
-& git -C $worktreePath checkout -B gh-pages origin/gh-pages
+Run-Git clone --branch gh-pages --single-branch $originUrl $worktreePath
+& git -C $worktreePath checkout gh-pages
 if ($LASTEXITCODE -ne 0) {
   throw "git -C $worktreePath checkout gh-pages failed with exit code $LASTEXITCODE"
 }
@@ -53,6 +53,9 @@ Get-ChildItem -LiteralPath $worktreePath -Force |
   Where-Object { $_.Name -ne ".git" } |
   Remove-Item -Recurse -Force
 
+if (Test-Path "$repoRoot\frontend\dist\.git") {
+  Remove-Item -LiteralPath "$repoRoot\frontend\dist\.git" -Recurse -Force
+}
 Copy-Item -Path "$repoRoot\frontend\dist\*" -Destination $worktreePath -Recurse -Force
 New-Item -Path (Join-Path $worktreePath ".nojekyll") -ItemType File -Force | Out-Null
 
