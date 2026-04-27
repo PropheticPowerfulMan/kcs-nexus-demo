@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "session:commit": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/session-commit.ps1"
+    "session:commit": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/session-commit.ps1",
+    "deploy:pages": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/deploy-gh-pages.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
