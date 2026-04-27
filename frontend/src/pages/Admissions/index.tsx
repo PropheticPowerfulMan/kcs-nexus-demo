@@ -1,0 +1,479 @@
+import { useState, useRef } from 'react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
+import {
+  CheckCircle2, ChevronRight, FileText, Upload, User, Users,
+  GraduationCap, Calendar, ClipboardList, ArrowRight, Star
+} from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+/* ────────────── Animation helpers ────────────── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+}
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+}
+const AnimSection = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+  return (
+    <motion.div ref={ref} variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className={className}>
+      {children}
+    </motion.div>
+  )
+}
+
+/* ────────────── Data ────────────── */
+const steps = [
+  { num: 1, title: 'Submit Application', desc: 'Complete the online form with student and family details.', icon: ClipboardList },
+  { num: 2, title: 'Document Review', desc: 'Our admissions team reviews transcripts, recommendation letters, and required documents.', icon: FileText },
+  { num: 3, title: 'Entrance Assessment', desc: 'Scheduled assessment in English, Math, and general knowledge for new students.', icon: GraduationCap },
+  { num: 4, title: 'Parent Interview', desc: 'A meeting with the Principal and Admissions Director to discuss school fit and expectations.', icon: Users },
+  { num: 5, title: 'Admission Decision', desc: 'You will receive a decision within 5-10 business days via email.', icon: CheckCircle2 },
+  { num: 6, title: 'Enrollment & Registration', desc: 'Complete enrollment forms, pay registration fees, and join the KCS family!', icon: Star },
+]
+
+const requirements = [
+  'Completed online application form',
+  'Birth certificate',
+  'Previous school transcript',
+  'Parent or guardian contact information',
+  'Requested class level',
+  'Additional comments for the admissions team',
+]
+
+const programs = [
+  { name: 'Kindergarten', grades: 'Early Years', age: 'Young learners', tuition: 'Faith & knowledge', spots: 8 },
+  { name: 'Elementary', grades: 'Primary grades', age: 'Children', tuition: 'Strong foundation', spots: 12 },
+  { name: 'Middle School', grades: 'Middle grades', age: 'Early teens', tuition: 'Knowledge & character', spots: 6 },
+  { name: 'High School', grades: 'Secondary grades', age: 'Teens', tuition: 'Future readiness', spots: 10 },
+]
+
+/* ────────────── Zod Form Schema ────────────── */
+const STEPS = ['Student', 'Parent', 'Documents', 'Review'] as const
+type Step = (typeof STEPS)[number]
+
+const studentSchema = z.object({
+  firstName:      z.string().min(2, 'Required'),
+  lastName:       z.string().min(2, 'Required'),
+  dateOfBirth:    z.string().min(1, 'Required'),
+  nationality:    z.string().min(2, 'Required'),
+  applyingGrade:  z.string().min(1, 'Select a grade'),
+  currentSchool:  z.string().min(2, 'Required'),
+  languages:      z.string().optional(),
+})
+const parentSchema = z.object({
+  parentName:   z.string().min(2, 'Required'),
+  relationship: z.string().min(2, 'Required'),
+  email:        z.string().email('Valid email required'),
+  phone:        z.string().min(8, 'Valid phone required'),
+  address:      z.string().min(5, 'Required'),
+  occupation:   z.string().optional(),
+})
+
+type StudentData = z.infer<typeof studentSchema>
+type ParentData  = z.infer<typeof parentSchema>
+
+/* ────────────── Component ────────────── */
+const AdmissionsPage = () => {
+  const [activeStep, setActiveStep] = useState<Step>('Student')
+  const [studentData, setStudentData] = useState<StudentData | null>(null)
+  const [parentData,  setParentData]  = useState<ParentData  | null>(null)
+  const [submitted, setSubmitted] = useState(false)
+  const [applicationId, setApplicationId] = useState('')
+
+  const stepIdx = STEPS.indexOf(activeStep)
+
+  const studentForm = useForm<StudentData>({ resolver: zodResolver(studentSchema) })
+  const parentForm  = useForm<ParentData>({  resolver: zodResolver(parentSchema) })
+
+  const handleStudentSubmit = (data: StudentData) => {
+    setStudentData(data)
+    setActiveStep('Parent')
+  }
+  const handleParentSubmit = (data: ParentData) => {
+    setParentData(data)
+    setActiveStep('Documents')
+  }
+  const handleFinalSubmit = () => {
+    const id = 'KCS-' + Date.now().toString().slice(-6)
+    setApplicationId(id)
+    setSubmitted(true)
+  }
+
+  return (
+    <div className="bg-white dark:bg-kcs-blue-950 min-h-screen">
+      {/* Hero */}
+      <section className="relative bg-kcs-blue-900 text-white py-24 overflow-hidden">
+        <div className="absolute inset-0 dots-bg opacity-30" />
+        <div className="absolute inset-0 hero-overlay" />
+        <div className="relative container-custom text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-kcs-gold-500/20 text-kcs-gold-300 text-sm font-medium mb-6 border border-kcs-gold-500/30">
+              <Star size={14} /> Admissions 2025–2026 Now Open
+            </span>
+            <h1 className="text-4xl md:text-6xl font-bold font-display mb-4">
+              Begin Your <span className="text-kcs-gold-400">KCS Journey</span>
+            </h1>
+            <p className="text-kcs-blue-200 text-lg max-w-2xl mx-auto mb-8">
+              Kinshasa Christian School welcomes families seeking an excellence-driven, faith-based American education for their children.
+            </p>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <a href="#apply" className="btn-gold">Apply Now <ArrowRight size={16} className="inline ml-1" /></a>
+              <a href="#programs" className="btn-primary bg-white/10 border border-white/20">View Programs</a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Available Programs */}
+      <section id="programs" className="section-padding bg-gray-50 dark:bg-kcs-blue-900/30">
+        <div className="container-custom">
+          <AnimSection>
+            <motion.div variants={fadeUp} className="text-center mb-12">
+              <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white mb-3">Available Programs</h2>
+              <p className="text-gray-500 dark:text-gray-400">Spaces available for the 2025–2026 academic year</p>
+            </motion.div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {programs.map((p) => (
+                <motion.div key={p.name} variants={fadeUp} className="card-hover bg-white dark:bg-kcs-blue-900 rounded-2xl p-6 text-center border border-gray-100 dark:border-kcs-blue-800">
+                  <div className="w-12 h-12 kcs-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <GraduationCap size={24} className="text-white" />
+                  </div>
+                  <h3 className="font-bold text-kcs-blue-900 dark:text-white mb-1">{p.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{p.grades} · {p.age}</p>
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-kcs-blue-800">
+                    <p className="text-lg font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{p.tuition}</p>
+                    <p className="text-xs text-gray-400">{p.spots} spots remaining</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </AnimSection>
+        </div>
+      </section>
+
+      {/* Admission Process */}
+      <section className="section-padding bg-white dark:bg-kcs-blue-950">
+        <div className="container-custom">
+          <AnimSection>
+            <motion.div variants={fadeUp} className="text-center mb-12">
+              <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white mb-3">Admission Process</h2>
+              <p className="text-gray-500 dark:text-gray-400">Six simple steps to joining KCS</p>
+            </motion.div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {steps.map(({ num, title, desc, icon: Icon }) => (
+                <motion.div key={num} variants={fadeUp} className="flex gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-2xl kcs-gradient flex items-center justify-center">
+                      <Icon size={22} className="text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-kcs-gold-600 dark:text-kcs-gold-400 mb-0.5">Step {num}</p>
+                    <h3 className="font-bold text-kcs-blue-900 dark:text-white mb-1">{title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </AnimSection>
+        </div>
+      </section>
+
+      {/* Requirements */}
+      <section className="section-padding bg-kcs-blue-900 text-white">
+        <div className="container-custom">
+          <AnimSection>
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <motion.div variants={fadeUp}>
+                <h2 className="text-3xl font-bold font-display mb-4">Required Documents</h2>
+                <p className="text-kcs-blue-200 mb-6">Please prepare the following documents before beginning your application.</p>
+                <ul className="space-y-3">
+                  {requirements.map((req) => (
+                    <li key={req} className="flex items-center gap-3">
+                      <CheckCircle2 size={18} className="text-kcs-gold-400 flex-shrink-0" />
+                      <span className="text-kcs-blue-100">{req}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+              <motion.div variants={fadeUp} className="glass-card rounded-2xl p-6 bg-white/5 border border-white/10">
+                <h3 className="font-bold text-xl mb-4">Key Dates 2025–2026</h3>
+                {[
+                  { date: 'Now – Jun 30', label: 'Applications Open' },
+                  { date: 'Jul 1 – Jul 15', label: 'Entrance Assessments' },
+                  { date: 'Jul 20', label: 'Decisions Released' },
+                  { date: 'Aug 1 – Aug 15', label: 'Enrollment Period' },
+                  { date: 'Aug 25', label: 'First Day of School' },
+                ].map(({ date, label }) => (
+                  <div key={label} className="flex justify-between items-center py-2.5 border-b border-white/10 last:border-0">
+                    <span className="text-kcs-blue-200 text-sm">{label}</span>
+                    <span className="text-kcs-gold-400 font-semibold text-sm">{date}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          </AnimSection>
+        </div>
+      </section>
+
+      {/* Application Form */}
+      <section id="apply" className="section-padding bg-gray-50 dark:bg-kcs-blue-900/20">
+        <div className="container-custom">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white mb-3">Online Application</h2>
+              <p className="text-gray-500 dark:text-gray-400">Complete all sections to submit your application.</p>
+            </div>
+
+            {submitted ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white dark:bg-kcs-blue-900/50 rounded-2xl p-10 text-center border border-gray-100 dark:border-kcs-blue-800 shadow-kcs"
+              >
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle2 size={40} className="text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold font-display text-kcs-blue-900 dark:text-white mb-2">Application Submitted!</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">Thank you for applying to KCS. We will be in touch within 5–10 business days.</p>
+                <div className="inline-block bg-kcs-blue-50 dark:bg-kcs-blue-900/30 rounded-xl px-6 py-3 border border-kcs-blue-100 dark:border-kcs-blue-800">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Your Application ID</p>
+                  <p className="text-2xl font-bold text-kcs-blue-700 dark:text-kcs-blue-300 tracking-wider">{applicationId}</p>
+                </div>
+                <p className="text-xs text-gray-400 mt-4">Save this ID to track your application status.</p>
+              </motion.div>
+            ) : (
+              <div className="bg-white dark:bg-kcs-blue-900/50 rounded-2xl border border-gray-100 dark:border-kcs-blue-800 shadow-kcs overflow-hidden">
+                {/* Step Progress */}
+                <div className="flex border-b border-gray-100 dark:border-kcs-blue-800">
+                  {STEPS.map((s, i) => (
+                    <button
+                      key={s}
+                      onClick={() => { if (i < stepIdx) setActiveStep(s) }}
+                      className={`flex-1 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                        s === activeStep ? 'text-kcs-blue-700 dark:text-kcs-blue-300 border-b-2 border-kcs-blue-600 bg-kcs-blue-50/50 dark:bg-kcs-blue-800/30' :
+                        i < stepIdx ? 'text-green-600 dark:text-green-400' :
+                        'text-gray-400 dark:text-gray-500'
+                      }`}
+                    >
+                      {i < stepIdx ? <CheckCircle2 size={16} /> : <span className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center text-xs font-bold">{i + 1}</span>}
+                      <span className="hidden sm:inline">{s}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-8">
+                  <AnimatePresence mode="wait">
+                    {/* Step 1: Student Info */}
+                    {activeStep === 'Student' && (
+                      <motion.form key="student" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                        onSubmit={studentForm.handleSubmit(handleStudentSubmit)}
+                        className="space-y-5">
+                        <h3 className="font-bold text-kcs-blue-900 dark:text-white flex items-center gap-2">
+                          <User size={18} className="text-kcs-blue-600" /> Student Information
+                        </h3>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">First Name *</label>
+                            <input {...studentForm.register('firstName')} className="input-kcs" placeholder="e.g. Grace" />
+                            {studentForm.formState.errors.firstName && <p className="text-xs text-red-500 mt-1">{studentForm.formState.errors.firstName.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Last Name *</label>
+                            <input {...studentForm.register('lastName')} className="input-kcs" placeholder="e.g. Mutombo" />
+                            {studentForm.formState.errors.lastName && <p className="text-xs text-red-500 mt-1">{studentForm.formState.errors.lastName.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Date of Birth *</label>
+                            <input type="date" {...studentForm.register('dateOfBirth')} className="input-kcs" />
+                            {studentForm.formState.errors.dateOfBirth && <p className="text-xs text-red-500 mt-1">{studentForm.formState.errors.dateOfBirth.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Nationality *</label>
+                            <input {...studentForm.register('nationality')} className="input-kcs" placeholder="e.g. Congolese" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Applying for Grade *</label>
+                            <select {...studentForm.register('applyingGrade')} className="input-kcs">
+                              <option value="">Select grade...</option>
+                              {['PreK', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map(g => (
+                                <option key={g} value={g}>{g}</option>
+                              ))}
+                            </select>
+                            {studentForm.formState.errors.applyingGrade && <p className="text-xs text-red-500 mt-1">{studentForm.formState.errors.applyingGrade.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Current School *</label>
+                            <input {...studentForm.register('currentSchool')} className="input-kcs" placeholder="School name" />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Languages Spoken</label>
+                            <input {...studentForm.register('languages')} className="input-kcs" placeholder="e.g. English, French, Lingala" />
+                          </div>
+                        </div>
+                        <div className="flex justify-end pt-2">
+                          <button type="submit" className="btn-primary flex items-center gap-2">
+                            Next: Parent Info <ChevronRight size={16} />
+                          </button>
+                        </div>
+                      </motion.form>
+                    )}
+
+                    {/* Step 2: Parent Info */}
+                    {activeStep === 'Parent' && (
+                      <motion.form key="parent" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                        onSubmit={parentForm.handleSubmit(handleParentSubmit)}
+                        className="space-y-5">
+                        <h3 className="font-bold text-kcs-blue-900 dark:text-white flex items-center gap-2">
+                          <Users size={18} className="text-kcs-blue-600" /> Parent / Guardian Information
+                        </h3>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Full Name *</label>
+                            <input {...parentForm.register('parentName')} className="input-kcs" placeholder="Parent full name" />
+                            {parentForm.formState.errors.parentName && <p className="text-xs text-red-500 mt-1">{parentForm.formState.errors.parentName.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Relationship to Student *</label>
+                            <select {...parentForm.register('relationship')} className="input-kcs">
+                              <option value="">Select...</option>
+                              <option>Father</option>
+                              <option>Mother</option>
+                              <option>Guardian</option>
+                              <option>Other</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Email Address *</label>
+                            <input type="email" {...parentForm.register('email')} className="input-kcs" placeholder="parent@email.com" />
+                            {parentForm.formState.errors.email && <p className="text-xs text-red-500 mt-1">{parentForm.formState.errors.email.message}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Phone Number *</label>
+                            <input {...parentForm.register('phone')} className="input-kcs" placeholder="+243 81 000 0000" />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Home Address *</label>
+                            <input {...parentForm.register('address')} className="input-kcs" placeholder="Full address in Kinshasa" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Occupation</label>
+                            <input {...parentForm.register('occupation')} className="input-kcs" placeholder="e.g. Engineer" />
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-2">
+                          <button type="button" onClick={() => setActiveStep('Student')} className="btn-primary bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
+                            Back
+                          </button>
+                          <button type="submit" className="btn-primary flex items-center gap-2">
+                            Next: Documents <ChevronRight size={16} />
+                          </button>
+                        </div>
+                      </motion.form>
+                    )}
+
+                    {/* Step 3: Documents */}
+                    {activeStep === 'Documents' && (
+                      <motion.div key="docs" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <h3 className="font-bold text-kcs-blue-900 dark:text-white flex items-center gap-2 mb-5">
+                          <Upload size={18} className="text-kcs-blue-600" /> Upload Documents
+                        </h3>
+                        <div className="space-y-4">
+                          {['Birth Certificate', 'Previous School Transcript', 'Additional Required Documents'].map((doc) => (
+                            <div key={doc} className="flex items-center justify-between p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-kcs-blue-700 hover:border-kcs-blue-400 dark:hover:border-kcs-blue-500 transition-colors group">
+                              <div className="flex items-center gap-3">
+                                <FileText size={20} className="text-gray-400 group-hover:text-kcs-blue-500 transition-colors" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">{doc}</span>
+                              </div>
+                              <label className="cursor-pointer text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-400 hover:underline">
+                                Upload PDF / JPG
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-3">* Documents can also be submitted in person at the KCS Admissions Office.</p>
+                        <div className="flex justify-between pt-6">
+                          <button onClick={() => setActiveStep('Parent')} className="btn-primary bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
+                            Back
+                          </button>
+                          <button onClick={() => setActiveStep('Review')} className="btn-primary flex items-center gap-2">
+                            Review Application <ChevronRight size={16} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Step 4: Review */}
+                    {activeStep === 'Review' && studentData && parentData && (
+                      <motion.div key="review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                        <h3 className="font-bold text-kcs-blue-900 dark:text-white mb-5">Review & Submit</h3>
+                        <div className="grid sm:grid-cols-2 gap-6 mb-6">
+                          <div className="p-4 rounded-xl bg-gray-50 dark:bg-kcs-blue-800/30 border border-gray-100 dark:border-kcs-blue-800">
+                            <h4 className="font-semibold text-sm text-kcs-blue-900 dark:text-white mb-3 flex items-center gap-2"><User size={14} /> Student</h4>
+                            {[
+                              ['Name', `${studentData.firstName} ${studentData.lastName}`],
+                              ['DOB', studentData.dateOfBirth],
+                              ['Nationality', studentData.nationality],
+                              ['Applying For', studentData.applyingGrade],
+                              ['Current School', studentData.currentSchool],
+                            ].map(([k, v]) => (
+                              <div key={k} className="flex justify-between text-xs py-1 border-b border-gray-100 dark:border-kcs-blue-700 last:border-0">
+                                <span className="text-gray-500 dark:text-gray-400">{k}</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{v}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="p-4 rounded-xl bg-gray-50 dark:bg-kcs-blue-800/30 border border-gray-100 dark:border-kcs-blue-800">
+                            <h4 className="font-semibold text-sm text-kcs-blue-900 dark:text-white mb-3 flex items-center gap-2"><Users size={14} /> Parent</h4>
+                            {[
+                              ['Name', parentData.parentName],
+                              ['Relationship', parentData.relationship],
+                              ['Email', parentData.email],
+                              ['Phone', parentData.phone],
+                            ].map(([k, v]) => (
+                              <div key={k} className="flex justify-between text-xs py-1 border-b border-gray-100 dark:border-kcs-blue-700 last:border-0">
+                                <span className="text-gray-500 dark:text-gray-400">{k}</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{v}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-kcs-blue-50 dark:bg-kcs-blue-900/30 border border-kcs-blue-100 dark:border-kcs-blue-800 mb-6">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" required className="mt-0.5 w-4 h-4 accent-kcs-blue-600" />
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              I confirm that all information provided is accurate and complete. I agree to the KCS{' '}
+                              <a href="/about" className="text-kcs-blue-600 dark:text-kcs-blue-400 underline">Terms & Conditions</a> and{' '}
+                              <a href="/about" className="text-kcs-blue-600 dark:text-kcs-blue-400 underline">Privacy Policy</a>.
+                            </span>
+                          </label>
+                        </div>
+                        <div className="flex justify-between">
+                          <button onClick={() => setActiveStep('Documents')} className="btn-primary bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
+                            Back
+                          </button>
+                          <button onClick={handleFinalSubmit} className="btn-gold flex items-center gap-2">
+                            Submit Application <ArrowRight size={16} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+export default AdmissionsPage
