@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import PortalSidebar from '@/components/layout/PortalSidebar'
+import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts'
@@ -112,6 +113,8 @@ const StudentPortal = () => {
         </div>
 
         <div className="p-6 space-y-6">
+          <PortalSectionPanel />
+
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Academic Identity</h2>

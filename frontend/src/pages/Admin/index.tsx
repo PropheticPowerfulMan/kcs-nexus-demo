@@ -8,6 +8,7 @@ import {
   Tooltip, XAxis, YAxis
 } from 'recharts'
 import PortalSidebar from '@/components/layout/PortalSidebar'
+import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import { aiSignals, auditLogs, rolePermissions, staffOperations, students } from '@/data/schoolEcosystem'
 
@@ -82,6 +83,8 @@ const AdminDashboard = () => {
         </div>
 
         <div className="space-y-6 p-6">
+          <PortalSectionPanel />
+
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
             {[
               { label: 'Total Students', value: '511', icon: GraduationCap, tone: 'bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300', sub: '+8 this month' },

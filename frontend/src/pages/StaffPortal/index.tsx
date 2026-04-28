@@ -8,6 +8,7 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts'
 import PortalSidebar from '@/components/layout/PortalSidebar'
+import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import {
   academicContext, aiSignals, announcements, auditLogs,
@@ -53,6 +54,8 @@ const StaffPortal = () => {
         </div>
 
         <div className="space-y-6 p-6">
+          <PortalSectionPanel />
+
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             {[
               { label: 'Student Records', value: '511', sub: '18 changed today', icon: Users, tone: 'bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300' },

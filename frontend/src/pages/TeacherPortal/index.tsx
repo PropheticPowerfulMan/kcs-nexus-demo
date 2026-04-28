@@ -5,6 +5,7 @@ import {
   Clock, FileText, GraduationCap, MessageSquare, TrendingUp, Users
 } from 'lucide-react'
 import PortalSidebar from '@/components/layout/PortalSidebar'
+import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import {
   aiSignals,
@@ -63,7 +64,7 @@ const TeacherPortal = () => {
               <Link to="/portal/teacher/messages" className="btn-primary text-sm py-2">
                 Inbox
               </Link>
-              <Link to="/portal/student/ai-tutor" className="btn-gold text-sm py-2 flex items-center gap-2">
+              <Link to="/portal/teacher/assignments" className="btn-gold text-sm py-2 flex items-center gap-2">
                 <Brain size={16} /> AI Insights
               </Link>
             </div>
@@ -71,6 +72,8 @@ const TeacherPortal = () => {
         </div>
 
         <div className="space-y-6 p-6">
+          <PortalSectionPanel />
+
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Teacher Command Center</h2>
@@ -272,7 +275,7 @@ const TeacherPortal = () => {
                 <p className="mb-2 text-sm font-semibold text-kcs-gold-300">AI Classroom Assistant</p>
                 <h2 className="font-display text-2xl font-bold">Generate intervention plans, revision exercises, and parent summaries faster.</h2>
               </div>
-              <Link to="/portal/student/ai-tutor" className="btn-gold whitespace-nowrap text-sm py-2.5">
+              <Link to="/portal/teacher/assignments" className="btn-gold whitespace-nowrap text-sm py-2.5">
                 Open AI Assistant
               </Link>
             </div>
