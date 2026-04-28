@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,9 +34,17 @@ const demoAccounts: DemoAccount[] = [
   { email: 'admin@kcsnexus.edu', password: 'password123', role: 'admin', firstName: 'Sarah', lastName: 'Carter', label: 'Admin demo' },
 ]
 
+const superAdminAliases = ['superadmin@kcsnexus.com', 'superadmin@kcsnexus.edu', 'admin@kcsnexus.com']
+const superAdminPasswords = ['SuperAdmin123!', 'password123']
+const superAdminAccount = demoAccounts[0]
+
 const findDemoAccount = (values: LoginFormValues) => {
   const email = values.email.trim().toLowerCase()
   const password = values.password.trim()
+
+  if (superAdminAliases.includes(email) && superAdminPasswords.includes(password)) {
+    return superAdminAccount
+  }
 
   return demoAccounts.find((account) => (
     account.email.toLowerCase() === email && account.password === password
@@ -55,8 +63,7 @@ const buildDemoUser = (account: DemoAccount): User => ({
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { login, isAuthenticated, setLoading, isLoading } = useAuthStore()
+  const { login, logout, user, isAuthenticated, setLoading, isLoading } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -68,21 +75,19 @@ const LoginPage = () => {
     },
   })
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true })
-    }
-  }, [isAuthenticated, navigate])
-
   const resolveDestination = (role: UserRole) => {
-    const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
-    if (from) return from
     return role === 'admin' ? '/admin' : `/portal/${role}`
   }
 
   const handleSuccessfulLogin = (user: User) => {
+    logout()
     login(user, 'demo-access-token', 'demo-refresh-token')
     navigate(resolveDestination(user.role), { replace: true })
+  }
+
+  const enterSuperAdmin = () => {
+    setErrorMessage('')
+    handleSuccessfulLogin(buildDemoUser(superAdminAccount))
   }
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -190,6 +195,12 @@ const LoginPage = () => {
                 </div>
               )}
 
+              {isAuthenticated && user && (
+                <div className="mb-6 rounded-2xl border border-kcs-blue-200 bg-kcs-blue-50 px-4 py-3 text-sm text-kcs-blue-800 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-200">
+                  Session active: {user.firstName} {user.lastName} ({user.role}). Choisissez un compte demo ci-dessous pour remplacer cette session.
+                </div>
+              )}
+
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Email</label>
@@ -259,11 +270,11 @@ const LoginPage = () => {
 
               <button
                 type="button"
-                onClick={() => handleSuccessfulLogin(buildDemoUser(demoAccounts[0]))}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/40 dark:text-white dark:hover:bg-kcs-blue-800/40"
+                onClick={enterSuperAdmin}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-kcs-gold-300 bg-kcs-gold-400 px-4 py-3 font-semibold text-kcs-blue-950 transition-colors hover:bg-kcs-gold-500"
               >
-                <span className="text-lg">G</span>
-                Sign in with Google
+                <ShieldCheck size={18} />
+                Entrer comme Super Admin
               </button>
 
               <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
