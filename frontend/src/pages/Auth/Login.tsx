@@ -34,6 +34,15 @@ const demoAccounts: DemoAccount[] = [
   { email: 'admin@kcsnexus.edu', password: 'password123', role: 'admin', firstName: 'Sarah', lastName: 'Carter', label: 'Admin demo' },
 ]
 
+const findDemoAccount = (values: LoginFormValues) => {
+  const email = values.email.trim().toLowerCase()
+  const password = values.password.trim()
+
+  return demoAccounts.find((account) => (
+    account.email.toLowerCase() === email && account.password === password
+  ))
+}
+
 const buildDemoUser = (account: DemoAccount): User => ({
   id: account.role + '-demo',
   email: account.email,
@@ -81,7 +90,13 @@ const LoginPage = () => {
     setErrorMessage('')
 
     try {
-      const response = await authAPI.login(values.email, values.password)
+      const demoAccount = findDemoAccount(values)
+      if (demoAccount) {
+        handleSuccessfulLogin(buildDemoUser(demoAccount))
+        return
+      }
+
+      const response = await authAPI.login(values.email.trim(), values.password)
       const data = response.data?.data
       if (!data?.user || !data?.token || !data?.refreshToken) {
         throw new Error('Invalid authentication response')
@@ -89,16 +104,16 @@ const LoginPage = () => {
       login(data.user, data.token, data.refreshToken)
       navigate(resolveDestination(data.user.role), { replace: true })
     } catch (err: any) {
-      const demoAccount = demoAccounts.find((account) => account.email === values.email && account.password === values.password)
+      const demoAccount = findDemoAccount(values)
       if (demoAccount) {
         handleSuccessfulLogin(buildDemoUser(demoAccount))
       } else {
         // Afficher l’erreur réelle du backend si disponible
         let message = 'Login failed. Use one of the demo accounts or connect the backend auth service.'
         if (err?.response?.data?.message) {
-          message = `Erreur API: ${err.response.data.message}`
+          message = `Erreur API: ${err.response.data.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
         } else if (err?.message) {
-          message = `Erreur: ${err.message}`
+          message = `Erreur: ${err.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
         }
         setErrorMessage(message)
       }
@@ -222,8 +237,24 @@ const LoginPage = () => {
 
               <div className="my-6 flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-gray-400">
                 <div className="h-px flex-1 bg-gray-200 dark:bg-kcs-blue-800" />
-                Or continue with
+                Demo access
                 <div className="h-px flex-1 bg-gray-200 dark:bg-kcs-blue-800" />
+              </div>
+
+              <div className="mb-3 grid grid-cols-2 gap-2 lg:hidden">
+                {demoAccounts.slice(0, 4).map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    onClick={() => {
+                      form.setValue('email', account.email)
+                      form.setValue('password', account.password)
+                    }}
+                    className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs font-semibold text-gray-700 transition-colors hover:bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/40 dark:text-white"
+                  >
+                    {account.label}
+                  </button>
+                ))}
               </div>
 
               <button
