@@ -50,7 +50,7 @@ const Header = () => {
 
   const isHomePage = location.pathname === '/'
   const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
-  const dashboardPath = user?.role === 'admin' ? '/admin' : `/portal/${user?.role}`
+  const dashboardPath = user?.role === 'admin' ? '/admin' : `/portal/${user?.role ?? ''}`
 
   const navItems = [
     { to: '/', label: t('nav.home'), icon: Home },

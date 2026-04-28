@@ -15,6 +15,7 @@ import StudentForumPage from '@/pages/StudentForum'
 import ParentPortal from '@/pages/ParentPortal'
 import ParentForumPage from '@/pages/ParentForum'
 import TeacherPortal from '@/pages/TeacherPortal'
+import StaffPortal from '@/pages/StaffPortal'
 import AdminDashboard from '@/pages/Admin'
 import SchoolRegistryPage from '@/pages/Admin/SchoolRegistry'
 import ForumInsightsPage from '@/pages/Admin/ForumInsights'
@@ -166,6 +167,34 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <TeacherPortal />
+              </ProtectedRoute>
+            }
+          />
+        ))}
+
+        <Route
+          path="/portal/staff"
+          element={
+            <ProtectedRoute allowedRoles={['staff']}>
+              <StaffPortal />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portal/staff/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['staff']}>
+              <StaffPortal />
+            </ProtectedRoute>
+          }
+        />
+        {['records', 'admissions', 'announcements', 'reports', 'messages', 'permissions'].map((segment) => (
+          <Route
+            key={segment}
+            path={`/portal/staff/${segment}`}
+            element={
+              <ProtectedRoute allowedRoles={['staff']}>
+                <StaffPortal />
               </ProtectedRoute>
             }
           />

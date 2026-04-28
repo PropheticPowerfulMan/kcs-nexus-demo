@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
   Users, Settings, Bell, ChevronLeft, ChevronRight,
   GraduationCap, BarChart3, MessageSquare, LogOut,
-  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X
+  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -55,6 +55,16 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/portal/teacher/grades', label: 'Grade Book', icon: BarChart3 },
         { to: '/portal/teacher/messages', label: 'Messages', icon: MessageSquare },
       ]
+    case 'staff':
+      return [
+        ...base,
+        { to: '/portal/staff/records', label: 'Records', icon: LibraryBig },
+        { to: '/portal/staff/admissions', label: 'Admissions', icon: ClipboardList },
+        { to: '/portal/staff/announcements', label: 'Announcements', icon: Megaphone },
+        { to: '/portal/staff/reports', label: 'Reports', icon: FileSpreadsheet },
+        { to: '/portal/staff/messages', label: 'Messages', icon: MessageSquare, badge: 12 },
+        { to: '/portal/staff/permissions', label: 'Permissions', icon: Shield },
+      ]
     case 'admin':
       return [
         ...base,
@@ -96,6 +106,7 @@ const PortalSidebar = () => {
   const navItems = getNavItems(user.role, t)
   const roleColor = {
     admin: 'bg-purple-600',
+    staff: 'bg-slate-700',
     teacher: 'bg-green-600',
     student: 'bg-kcs-blue-600',
     parent: 'bg-orange-500',
@@ -103,6 +114,7 @@ const PortalSidebar = () => {
 
   const roleName = {
     admin: 'Administrator',
+    staff: 'Administrative Staff',
     teacher: 'Teacher',
     student: 'Student',
     parent: 'Parent',

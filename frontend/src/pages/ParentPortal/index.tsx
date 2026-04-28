@@ -11,6 +11,15 @@ import PortalSidebar from '@/components/layout/PortalSidebar'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from 'recharts'
+import {
+  announcements as ecosystemAnnouncements,
+  assignments as ecosystemAssignments,
+  attendance as ecosystemAttendance,
+  aiSignals,
+  events as ecosystemEvents,
+  grades as ecosystemGrades,
+  students as ecosystemStudents,
+} from '@/data/schoolEcosystem'
 
 /* ────────────────── Mock data ────────────────── */
 const children = [
@@ -143,6 +152,40 @@ const ParentPortal = () => {
         </div>
 
         <div className="p-6 space-y-6">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">School Information</h2>
+              <div className="space-y-3">
+                {ecosystemAnnouncements.filter((item) => item.audience.includes('parent')).map((item) => (
+                  <div key={item.id} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.date} • {item.priority} priority</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Parent Responsibilities</h2>
+              <div className="space-y-3 text-sm">
+                {['Confirm David math intervention message', 'Review updated parent rights and duties', 'Upload medical form before May 1', 'Book parent-teacher conference slot'].map((item) => (
+                  <div key={item} className="flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-gray-700 dark:bg-kcs-blue-800/30 dark:text-gray-300">
+                    <CheckCircle2 size={15} className="mt-0.5 text-kcs-gold-500" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Parent AI Assistant</h2>
+              <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                Ask about policies, schedules, grades, attendance, and how to support each child at home. Current AI focus: {aiSignals.find((signal) => signal.roles.includes('parent'))?.detail}
+              </p>
+              <button className="mt-4 w-full rounded-xl bg-kcs-blue-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800">
+                Ask Parent AI
+              </button>
+            </div>
+          </div>
+
           {/* Child Overview Card */}
           <motion.div
             key={selectedChild.id}
@@ -199,6 +242,51 @@ const ParentPortal = () => {
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>
               </motion.div>
             ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Live Child Records</h2>
+              <div className="space-y-3">
+                {ecosystemStudents.filter((student) => student.parentId === 'parent-kabongo').map((student) => (
+                  <div key={student.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{student.grade} {student.section}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{student.aiInsight}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Attendance Updates</h2>
+              <div className="space-y-3">
+                {ecosystemAttendance.map((record) => {
+                  const student = ecosystemStudents.find((item) => item.id === record.studentId)
+                  return (
+                    <div key={`${record.studentId}-${record.date}`} className="flex items-center justify-between rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                      <div>
+                        <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{record.date} • {record.className}</p>
+                      </div>
+                      <span className="rounded-full bg-kcs-blue-50 px-2.5 py-1 text-xs font-semibold capitalize text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">{record.status}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Upcoming Work & Events</h2>
+              <div className="space-y-3">
+                {[...ecosystemAssignments.filter((item) => item.status !== 'submitted').slice(0, 3), ...ecosystemEvents.filter((item) => item.target.includes('parent')).slice(0, 2)].map((item: any) => (
+                  <div key={item.id ?? item.title} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.due ?? item.date} • {item.subject ?? item.type}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">

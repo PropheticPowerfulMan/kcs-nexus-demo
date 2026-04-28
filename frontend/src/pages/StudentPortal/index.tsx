@@ -11,6 +11,14 @@ import PortalSidebar from '@/components/layout/PortalSidebar'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts'
+import {
+  academicContext,
+  announcements as ecosystemAnnouncements,
+  assignments as ecosystemAssignments,
+  events as ecosystemEvents,
+  grades as ecosystemGrades,
+  students as ecosystemStudents,
+} from '@/data/schoolEcosystem'
 
 const performanceData = [
   { month: 'Sep', gpa: 3.2 },
@@ -104,6 +112,36 @@ const StudentPortal = () => {
         </div>
 
         <div className="p-6 space-y-6">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Academic Identity</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {ecosystemStudents[0].name} • {ecosystemStudents[0].grade} {ecosystemStudents[0].section} • {academicContext.term}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{ecosystemStudents[0].aiInsight}</p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">School Alerts</h2>
+              <div className="space-y-2">
+                {ecosystemAnnouncements.filter((item) => item.audience.includes('student')).slice(0, 3).map((item) => (
+                  <div key={item.id} className="rounded-xl bg-gray-50 p-3 text-sm dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.date}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">AI Learning Coach</h2>
+              <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                Build a study plan, revise difficult topics, generate practice questions, and prepare for {academicContext.nextExamWindow}.
+              </p>
+              <Link to="/portal/student/ai-tutor" className="mt-4 inline-flex w-full justify-center rounded-xl bg-kcs-blue-700 px-4 py-3 text-sm font-semibold text-white hover:bg-kcs-blue-800">
+                Open AI Tutor
+              </Link>
+            </div>
+          </div>
+
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
@@ -128,6 +166,45 @@ const StudentPortal = () => {
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>
               </motion.div>
             ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Latest Teacher Updates</h2>
+              <div className="space-y-3">
+                {ecosystemGrades.filter((grade) => grade.studentId === 'stu-elise').slice(0, 3).map((grade) => (
+                  <div key={`${grade.subject}-${grade.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{grade.subject}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{grade.assessment} • {grade.score}/{grade.max} • {grade.teacher}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Deadlines</h2>
+              <div className="space-y-3">
+                {ecosystemAssignments.filter((item) => item.studentId === 'stu-elise').map((item) => (
+                  <div key={item.id} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold capitalize text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">{item.status}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.subject} • {item.due}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Calendar</h2>
+              <div className="space-y-3">
+                {ecosystemEvents.filter((item) => item.target.includes('student')).map((item) => (
+                  <div key={item.title} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.date} • {item.type}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">

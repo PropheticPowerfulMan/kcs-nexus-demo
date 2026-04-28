@@ -6,6 +6,15 @@ import {
 } from 'lucide-react'
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import { useAuthStore } from '@/store/authStore'
+import {
+  aiSignals,
+  assignments as ecosystemAssignments,
+  attendance as ecosystemAttendance,
+  grades as ecosystemGrades,
+  messages as ecosystemMessages,
+  schedules as ecosystemSchedules,
+  students as ecosystemStudents,
+} from '@/data/schoolEcosystem'
 
 const todayClasses = [
   { time: '7:45 AM', course: 'Grade 11 AP Biology', room: 'Lab 3', students: 24 },
@@ -62,6 +71,36 @@ const TeacherPortal = () => {
         </div>
 
         <div className="space-y-6 p-6">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Teacher Command Center</h2>
+              <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                Attendance, grades, assignments, behavior notes, parent communication, and AI support are connected to parent, student, staff, and Super Admin dashboards.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">AI Teaching Assistant</h2>
+              <div className="grid gap-2 text-sm">
+                {['Generate lesson plan', 'Create quiz', 'Detect struggling students', 'Draft report-card comments'].map((item) => (
+                  <button key={item} className="rounded-xl bg-gray-50 px-3 py-2 text-left font-semibold text-kcs-blue-900 hover:bg-kcs-blue-50 dark:bg-kcs-blue-800/30 dark:text-white">
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Cross-role Alerts</h2>
+              <div className="space-y-2">
+                {aiSignals.filter((signal) => signal.roles.includes('teacher')).map((signal) => (
+                  <div key={signal.title} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{signal.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{signal.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[
               { label: 'Classes Today', value: '4', sub: '83 students total', icon: Calendar, tone: 'bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300' },
@@ -86,6 +125,56 @@ const TeacherPortal = () => {
                 </motion.div>
               )
             })}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Attendance Taken</h2>
+              <div className="space-y-3">
+                {ecosystemAttendance.map((record) => {
+                  const student = ecosystemStudents.find((item) => item.id === record.studentId)
+                  return (
+                    <div key={`${record.studentId}-${record.date}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                      <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name}</p>
+                      <p className="text-xs capitalize text-gray-500 dark:text-gray-400">{record.status} • visible to parents and admin</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Recent Grade Entries</h2>
+              <div className="space-y-3">
+                {ecosystemGrades.slice(0, 4).map((grade) => (
+                  <div key={`${grade.studentId}-${grade.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{grade.subject}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{grade.assessment} • {grade.score}% • parent/student updated</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Submitted Work</h2>
+              <div className="space-y-3">
+                {ecosystemAssignments.filter((item) => item.status === 'submitted' || item.status === 'missing').map((item) => (
+                  <div key={item.id} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs capitalize text-gray-500 dark:text-gray-400">{item.status} • {item.subject}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Schedule Alerts</h2>
+              <div className="space-y-3">
+                {ecosystemSchedules.filter((item) => item.role === 'teacher').map((item) => (
+                  <div key={`${item.time}-${item.title}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{item.time} • {item.room}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">

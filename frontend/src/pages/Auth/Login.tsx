@@ -27,6 +27,7 @@ type DemoAccount = {
 
 const demoAccounts: DemoAccount[] = [
   { email: 'superadmin@kcsnexus.com', password: 'SuperAdmin123!', role: 'admin', firstName: 'Super', lastName: 'Admin', label: 'Super admin' },
+  { email: 'staff@kcsnexus.edu', password: 'password123', role: 'staff', firstName: 'Miriam', lastName: 'Office', label: 'Administrative staff' },
   { email: 'student@kcsnexus.edu', password: 'password123', role: 'student', firstName: 'Grace', lastName: 'Mwamba', label: 'Student demo' },
   { email: 'parent@kcsnexus.edu', password: 'password123', role: 'parent', firstName: 'Rachel', lastName: 'Kabongo', label: 'Parent demo' },
   { email: 'teacher@kcsnexus.edu', password: 'password123', role: 'teacher', firstName: 'Daniel', lastName: 'Mukendi', label: 'Teacher demo' },

@@ -5,7 +5,7 @@ import { ApiError } from '../utils/api.js'
 
 type AuthPayload = {
   sub: string
-  role: 'admin' | 'teacher' | 'student' | 'parent'
+  role: 'admin' | 'staff' | 'teacher' | 'student' | 'parent'
 }
 
 export type AuthenticatedRequest = Request & {

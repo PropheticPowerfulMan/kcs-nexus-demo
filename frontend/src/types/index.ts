@@ -3,7 +3,7 @@
 // =============================================
 
 // --- User & Auth ---
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
+export type UserRole = 'admin' | 'staff' | 'teacher' | 'student' | 'parent';
 
 export interface User {
   id: string;
@@ -11,6 +11,8 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
+  staffFunction?: 'principal' | 'academic_coordinator' | 'registrar' | 'accountant' | 'discipline' | 'communications' | 'admissions' | 'office';
+  permissions?: string[];
   avatar?: string;
   phone?: string;
   createdAt: string;

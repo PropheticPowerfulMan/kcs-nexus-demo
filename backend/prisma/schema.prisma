@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  STAFF
   TEACHER
   STUDENT
   PARENT
@@ -76,6 +77,8 @@ model User {
   firstName          String
   lastName           String
   role               UserRole
+  staffFunction      String?
+  permissions        String[]             @default([])
   avatar             String?
   phone              String?
   googleId           String?              @unique
@@ -94,6 +97,34 @@ model User {
   studentForumPosts  StudentForumPost[]   @relation("StudentForumPostAuthor")
   studentForumComments StudentForumComment[] @relation("StudentForumCommentAuthor")
   aiStudentForumReports AIStudentForumReport[] @relation("AIStudentForumReportReviewer")
+  auditLogs          AuditLog[]            @relation("AuditActor")
+  staffProfile       StaffProfile?
+}
+
+model StaffProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  employeeNumber     String   @unique
+  function           String
+  department         String
+  permissions        String[] @default([])
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  action      String
+  targetType  String
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([targetType])
+  @@index([createdAt])
 }
 
 model RefreshToken {

@@ -1,0 +1,134 @@
+import type { UserRole } from '@/types'
+
+export const rolePermissions: Record<UserRole, string[]> = {
+  admin: ['*'],
+  staff: ['records:read', 'announcements:write', 'admissions:manage', 'reports:export', 'messages:send'],
+  teacher: ['attendance:write', 'grades:write', 'assignments:write', 'comments:write', 'classes:read'],
+  parent: ['children:read', 'messages:reply', 'documents:upload', 'meetings:book'],
+  student: ['own:read', 'assignments:submit', 'ai:tutor', 'messages:read'],
+}
+
+export const academicContext = {
+  year: '2025/26',
+  term: 'Term 3',
+  activeDay: 'Tuesday',
+  nextExamWindow: 'May 3 - May 17',
+}
+
+export const students = [
+  {
+    id: 'stu-elise',
+    name: 'Elise Kabongo',
+    grade: 'Grade 11',
+    section: 'A',
+    parentId: 'parent-kabongo',
+    advisor: 'Dr. Mukendi',
+    average: 92,
+    gpa: 3.9,
+    rank: 5,
+    attendance: 97,
+    risk: 'low',
+    strengths: ['Biology analysis', 'Essay structure', 'Independent study habits'],
+    weaknesses: ['Timed calculus drills'],
+    aiInsight: 'Elise is on an upward trend. Maintain AP revision blocks and add timed calculus practice twice per week.',
+  },
+  {
+    id: 'stu-david',
+    name: 'David Kabongo',
+    grade: 'Grade 8',
+    section: 'B',
+    parentId: 'parent-kabongo',
+    advisor: 'Mr. Belanger',
+    average: 78,
+    gpa: 3.1,
+    rank: 18,
+    attendance: 89,
+    risk: 'medium',
+    strengths: ['Class participation', 'History recall', 'Oral presentations'],
+    weaknesses: ['Fractions', 'Homework consistency'],
+    aiInsight: 'David needs a parent-teacher follow-up and a 20-minute daily math routine for the next 14 days.',
+  },
+]
+
+export const subjects = [
+  { id: 'math-11', name: 'AP Calculus', teacher: 'Mr. Belanger', className: 'Grade 11A', room: 'Room 204' },
+  { id: 'bio-11', name: 'AP Biology', teacher: 'Dr. Mukendi', className: 'Grade 11A', room: 'Lab 3' },
+  { id: 'eng-11', name: 'English Literature', teacher: 'Mrs. Diallo', className: 'Grade 11A', room: 'Room 110' },
+  { id: 'math-8', name: 'Pre-Algebra', teacher: 'Mr. Belanger', className: 'Grade 8B', room: 'Room 202' },
+]
+
+export const grades = [
+  { studentId: 'stu-elise', subject: 'AP Biology', assessment: 'Lab Report', score: 95, max: 100, date: 'Apr 18', teacher: 'Dr. Mukendi' },
+  { studentId: 'stu-elise', subject: 'AP Calculus', assessment: 'Quiz #7', score: 89, max: 100, date: 'Apr 17', teacher: 'Mr. Belanger' },
+  { studentId: 'stu-david', subject: 'Pre-Algebra', assessment: 'Chapter Test', score: 76, max: 100, date: 'Apr 16', teacher: 'Mr. Belanger' },
+  { studentId: 'stu-elise', subject: 'English Literature', assessment: 'Essay Draft', score: 91, max: 100, date: 'Apr 15', teacher: 'Mrs. Diallo' },
+  { studentId: 'stu-david', subject: 'World Geography', assessment: 'Map Quiz', score: 88, max: 100, date: 'Apr 14', teacher: 'Mrs. Nkosi' },
+]
+
+export const attendance = [
+  { studentId: 'stu-elise', date: 'Apr 22', status: 'present', className: 'Grade 11A' },
+  { studentId: 'stu-david', date: 'Apr 22', status: 'late', className: 'Grade 8B' },
+  { studentId: 'stu-david', date: 'Apr 19', status: 'absent', className: 'Grade 8B' },
+]
+
+export const assignments = [
+  { id: 'asg-1', studentId: 'stu-elise', title: 'AP Calculus Problem Set #8', subject: 'AP Calculus', due: 'Tomorrow', status: 'pending', priority: 'high' },
+  { id: 'asg-2', studentId: 'stu-elise', title: 'Biology Lab Report', subject: 'AP Biology', due: 'Apr 23', status: 'submitted', priority: 'low' },
+  { id: 'asg-3', studentId: 'stu-david', title: 'Fraction Fluency Practice', subject: 'Pre-Algebra', due: 'Tonight', status: 'missing', priority: 'high' },
+  { id: 'asg-4', studentId: 'stu-david', title: 'Geography Map Corrections', subject: 'World Geography', due: 'Apr 25', status: 'pending', priority: 'medium' },
+]
+
+export const schedules = [
+  { role: 'student', ownerId: 'stu-elise', time: '8:15 AM', title: 'AP Calculus', room: 'Room 204', teacher: 'Mr. Belanger' },
+  { role: 'student', ownerId: 'stu-elise', time: '10:15 AM', title: 'AP Biology', room: 'Lab 3', teacher: 'Dr. Mukendi' },
+  { role: 'teacher', ownerId: 'teacher-belanger', time: '8:15 AM', title: 'Grade 11 AP Calculus', room: 'Room 204', teacher: 'Mr. Belanger' },
+  { role: 'teacher', ownerId: 'teacher-belanger', time: '11:00 AM', title: 'Grade 8 Pre-Algebra', room: 'Room 202', teacher: 'Mr. Belanger' },
+]
+
+export const announcements = [
+  { id: 'ann-1', title: 'Exam schedules published', audience: ['parent', 'student', 'teacher', 'staff'], priority: 'high', date: 'Apr 22' },
+  { id: 'ann-2', title: 'Parent rights and duties policy updated', audience: ['parent', 'staff', 'admin'], priority: 'medium', date: 'Apr 21' },
+  { id: 'ann-3', title: 'Emergency drill on Friday', audience: ['parent', 'student', 'teacher', 'staff'], priority: 'high', date: 'Apr 20' },
+]
+
+export const events = [
+  { date: 'Apr 25', title: 'Parent-Teacher Conferences', type: 'meeting', target: ['parent', 'teacher', 'staff'] },
+  { date: 'May 3', title: 'AP Exams Begin', type: 'exam', target: ['student', 'parent', 'teacher'] },
+  { date: 'May 12', title: 'Spring Music Concert', type: 'event', target: ['parent', 'student', 'staff'] },
+]
+
+export const messages = [
+  { from: 'Mr. Belanger', toRole: 'parent', subject: 'David math intervention', body: 'Please confirm tonight that David completes Fraction Fluency Practice.', requiresResponse: true },
+  { from: 'Admissions Office', toRole: 'staff', subject: 'Three interviews need scheduling', body: 'New family interviews are pending office confirmation.', requiresResponse: true },
+  { from: 'Academic Coordinator', toRole: 'teacher', subject: 'Risk review', body: 'Please review students below 80% before Friday.', requiresResponse: false },
+]
+
+export const aiSignals = [
+  { title: 'Academic risk detected', detail: 'David Kabongo combines missing work with attendance decline.', severity: 'medium', roles: ['admin', 'staff', 'teacher', 'parent'] },
+  { title: 'Schedule impact', detail: 'AP exam window affects Grade 11 parent meetings and teacher assessment deadlines.', severity: 'high', roles: ['admin', 'staff', 'teacher', 'parent', 'student'] },
+  { title: 'Parent engagement opportunity', detail: 'Conference completion is 82%; communications office should send targeted reminders.', severity: 'low', roles: ['admin', 'staff'] },
+]
+
+export const auditLogs = [
+  { actor: 'Super Admin', action: 'Updated parent duties policy', target: 'Parent Portal', time: 'Apr 22, 9:14 AM' },
+  { actor: 'Mr. Belanger', action: 'Entered Pre-Algebra grade', target: 'David Kabongo', time: 'Apr 22, 8:40 AM' },
+  { actor: 'Registrar Office', action: 'Approved admission document', target: 'Amani M.', time: 'Apr 21, 3:12 PM' },
+]
+
+export const staffOperations = [
+  { function: 'Registrar', metric: 'Student record updates', value: 18, status: 'On track' },
+  { function: 'Accountant', metric: 'Fee follow-ups', value: 9, status: 'Needs review' },
+  { function: 'Discipline Office', metric: 'Open behavior cases', value: 4, status: 'Monitored' },
+  { function: 'Communications', metric: 'Unread parent replies', value: 12, status: 'Action needed' },
+]
+
+export const performanceTrend = [
+  { month: 'Sep', Elise: 84, David: 75 },
+  { month: 'Oct', Elise: 87, David: 77 },
+  { month: 'Nov', Elise: 88, David: 74 },
+  { month: 'Dec', Elise: 90, David: 80 },
+  { month: 'Jan', Elise: 89, David: 78 },
+  { month: 'Feb', Elise: 91, David: 81 },
+  { month: 'Mar', Elise: 92, David: 79 },
+  { month: 'Apr', Elise: 92, David: 78 },
+]

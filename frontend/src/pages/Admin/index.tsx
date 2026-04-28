@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import { useAuthStore } from '@/store/authStore'
+import { aiSignals, auditLogs, rolePermissions, staffOperations, students } from '@/data/schoolEcosystem'
 
 const enrollmentTrend = [
   { month: 'Sep', students: 472, applications: 68 },
@@ -232,6 +233,96 @@ const AdminDashboard = () => {
                   <div key={item} className="flex items-start gap-3 text-sm text-kcs-blue-100">
                     <ArrowUpRight size={16} className="mt-0.5 flex-shrink-0 text-kcs-gold-300" />
                     <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Role Permissions Matrix</h2>
+                <span className="badge-blue text-xs">Super Admin control</span>
+              </div>
+              <div className="space-y-3">
+                {Object.entries(rolePermissions).map(([role, permissions]) => (
+                  <div key={role} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold capitalize text-kcs-blue-900 dark:text-white">{role === 'admin' ? 'Super Admin' : role}</p>
+                      <span className="text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{permissions.length} permissions</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {permissions.slice(0, 5).map((permission) => (
+                        <span key={permission} className="rounded-full bg-white px-2.5 py-1 text-xs text-gray-600 dark:bg-kcs-blue-900/60 dark:text-gray-300">
+                          {permission}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Interconnected System Signals</h2>
+                <span className="badge-gold text-xs">Data driven</span>
+              </div>
+              <div className="space-y-3">
+                {aiSignals.map((signal) => (
+                  <div key={signal.title} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{signal.title}</p>
+                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">{signal.severity}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{signal.detail}</p>
+                    <p className="mt-2 text-xs text-gray-400">Visible to: {signal.roles.join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Student Risk Control</h2>
+              <div className="space-y-3">
+                {students.map((student) => (
+                  <div key={student.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${student.risk === 'low' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{student.risk}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{student.aiInsight}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Staff Operations</h2>
+              <div className="space-y-3">
+                {staffOperations.map((item) => (
+                  <div key={item.function} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.function}</p>
+                      <span className="font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{item.value}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.metric} • {item.status}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Sensitive Audit Logs</h2>
+              <div className="space-y-3">
+                {auditLogs.map((log) => (
+                  <div key={`${log.actor}-${log.time}`} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{log.action}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{log.actor} • {log.target}</p>
+                    <p className="mt-1 text-xs text-gray-400">{log.time}</p>
                   </div>
                 ))}
               </div>
