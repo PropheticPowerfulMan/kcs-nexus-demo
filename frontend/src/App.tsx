@@ -179,6 +179,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/portal/admin" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
         <Route
           path="/admin/registry"
           element={

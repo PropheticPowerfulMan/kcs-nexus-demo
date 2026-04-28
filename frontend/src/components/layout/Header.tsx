@@ -50,6 +50,7 @@ const Header = () => {
 
   const isHomePage = location.pathname === '/'
   const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
+  const dashboardPath = user?.role === 'admin' ? '/admin' : `/portal/${user?.role}`
 
   const navItems = [
     { to: '/', label: t('nav.home'), icon: Home },
@@ -174,7 +175,7 @@ const Header = () => {
             {/* Auth Button */}
             {isAuthenticated ? (
               <Link
-                to={`/portal/${user?.role}`}
+                to={dashboardPath}
                 className="hidden sm:flex items-center gap-2 btn-primary text-sm py-2"
               >
                 <div className="w-6 h-6 rounded-full bg-kcs-gold-500 flex items-center justify-center text-kcs-blue-950 text-xs font-bold">
@@ -245,7 +246,7 @@ const Header = () => {
 
               <div className="pt-3 mt-3 border-t border-gray-100 dark:border-kcs-blue-800 flex gap-2">
                 {isAuthenticated ? (
-                  <Link to={`/portal/${user?.role}`} className="flex-1 btn-primary text-center text-sm py-2.5">
+                  <Link to={dashboardPath} className="flex-1 btn-primary text-center text-sm py-2.5">
                     {t('nav.dashboard')}
                   </Link>
                 ) : (
