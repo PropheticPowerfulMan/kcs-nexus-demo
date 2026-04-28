@@ -100,10 +100,10 @@ const ParentPortal = () => {
   const [selectedChild, setSelectedChild] = useState(children[0])
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-kcs-blue-950 overflow-hidden">
+    <div className="portal-shell flex">
       <PortalSidebar />
 
-      <main className="flex-1 overflow-y-auto">
+      <main>
         {/* Top Bar */}
         <div className="sticky top-0 z-20 bg-white/80 dark:bg-kcs-blue-950/80 backdrop-blur-md border-b border-gray-100 dark:border-kcs-blue-800 px-6 py-4">
           <div className="flex items-center justify-between">

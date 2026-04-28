@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +14,7 @@ const Header = () => {
   const { theme, toggleTheme, language, setLanguage, unreadCount } = useUIStore()
   const { isAuthenticated, user } = useAuthStore()
   const location = useLocation()
+  const headerRef = useRef<HTMLElement | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -25,6 +26,19 @@ const Header = () => {
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        setMobileOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [mobileOpen])
 
   const currentLanguage = (i18n.resolvedLanguage || language).startsWith('fr') ? 'fr' : 'en'
 
@@ -49,6 +63,7 @@ const Header = () => {
 
   return (
     <header
+      ref={headerRef}
       className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 transition-all duration-500"
     >
       <div className="container-custom">

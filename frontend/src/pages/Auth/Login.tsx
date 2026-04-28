@@ -18,16 +18,19 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 type DemoAccount = {
   email: string
+  password: string
   role: UserRole
   firstName: string
   lastName: string
+  label: string
 }
 
 const demoAccounts: DemoAccount[] = [
-  { email: 'student@kcsnexus.edu', role: 'student', firstName: 'Grace', lastName: 'Mwamba' },
-  { email: 'parent@kcsnexus.edu', role: 'parent', firstName: 'Rachel', lastName: 'Kabongo' },
-  { email: 'teacher@kcsnexus.edu', role: 'teacher', firstName: 'Daniel', lastName: 'Mukendi' },
-  { email: 'admin@kcsnexus.edu', role: 'admin', firstName: 'Sarah', lastName: 'Carter' },
+  { email: 'superadmin@kcsnexus.com', password: 'SuperAdmin123!', role: 'admin', firstName: 'Super', lastName: 'Admin', label: 'Super admin' },
+  { email: 'student@kcsnexus.edu', password: 'password123', role: 'student', firstName: 'Grace', lastName: 'Mwamba', label: 'Student demo' },
+  { email: 'parent@kcsnexus.edu', password: 'password123', role: 'parent', firstName: 'Rachel', lastName: 'Kabongo', label: 'Parent demo' },
+  { email: 'teacher@kcsnexus.edu', password: 'password123', role: 'teacher', firstName: 'Daniel', lastName: 'Mukendi', label: 'Teacher demo' },
+  { email: 'admin@kcsnexus.edu', password: 'password123', role: 'admin', firstName: 'Sarah', lastName: 'Carter', label: 'Admin demo' },
 ]
 
 const buildDemoUser = (account: DemoAccount): User => ({
@@ -84,12 +87,19 @@ const LoginPage = () => {
       }
       login(data.user, data.token, data.refreshToken)
       navigate(resolveDestination(data.user.role), { replace: true })
-    } catch {
-      const demoAccount = demoAccounts.find((account) => account.email === values.email)
+    } catch (err: any) {
+      const demoAccount = demoAccounts.find((account) => account.email === values.email && account.password === values.password)
       if (demoAccount) {
         handleSuccessfulLogin(buildDemoUser(demoAccount))
       } else {
-        setErrorMessage('Login failed. Use one of the demo accounts or connect the backend auth service.')
+        // Afficher l’erreur réelle du backend si disponible
+        let message = 'Login failed. Use one of the demo accounts or connect the backend auth service.'
+        if (err?.response?.data?.message) {
+          message = `Erreur API: ${err.response.data.message}`
+        } else if (err?.message) {
+          message = `Erreur: ${err.message}`
+        }
+        setErrorMessage(message)
       }
     } finally {
       setLoading(false)
@@ -122,12 +132,12 @@ const LoginPage = () => {
                   type="button"
                   onClick={() => {
                     form.setValue('email', account.email)
-                    form.setValue('password', 'password123')
+                    form.setValue('password', account.password)
                   }}
                   className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-colors hover:bg-white/10"
                 >
                   <div>
-                    <p className="font-semibold capitalize">{account.role} demo</p>
+                    <p className="font-semibold">{account.label}</p>
                     <p className="text-sm text-kcs-blue-200">{account.email}</p>
                   </div>
                   <span className="rounded-full bg-kcs-gold-400 px-3 py-1 text-xs font-semibold text-kcs-blue-950">Quick Fill</span>

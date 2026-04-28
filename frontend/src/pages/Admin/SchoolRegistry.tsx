@@ -83,9 +83,9 @@ const SchoolRegistryPage = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-kcs-blue-950">
+    <div className="portal-shell flex">
       <PortalSidebar />
-      <main className="flex-1 overflow-y-auto">
+      <main>
         <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/85 px-6 py-4 backdrop-blur-md dark:border-kcs-blue-800 dark:bg-kcs-blue-950/85">
           <h1 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">Family and Student Registry</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Central registration for every parent and student in the school.</p>

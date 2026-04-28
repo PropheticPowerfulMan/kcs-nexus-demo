@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, allowedRoles, redirectTo = '/login' }: Prote
     return <Navigate to={redirectTo} state={{ from: location }} replace />
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && user.role !== 'admin' && !allowedRoles.includes(user.role)) {
     return <Navigate to={`/portal/${user.role}`} replace />
   }
 

@@ -30,8 +30,22 @@ export const authenticate = (req: AuthenticatedRequest, _res: Response, next: Ne
 
 export const requireRoles = (...roles: AuthPayload['role'][]) => {
   return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
       return next(new ApiError(403, 'Insufficient permissions'))
+    }
+
+    if (req.user.role === 'admin' || roles.includes(req.user.role)) {
+      return next()
+    }
+
+    return next(new ApiError(403, 'Insufficient permissions'))
+  }
+}
+
+export const requireAdmin = () => {
+  return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return next(new ApiError(403, 'Administrator permissions required'))
     }
 
     next()

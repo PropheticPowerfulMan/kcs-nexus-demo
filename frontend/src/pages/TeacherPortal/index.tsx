@@ -36,10 +36,10 @@ const TeacherPortal = () => {
   const { user } = useAuthStore()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-kcs-blue-950">
+    <div className="portal-shell flex">
       <PortalSidebar />
 
-      <main className="flex-1 overflow-y-auto">
+      <main>
         <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/85 px-6 py-4 backdrop-blur-md dark:border-kcs-blue-800 dark:bg-kcs-blue-950/85">
           <div className="flex items-center justify-between">
             <div>

@@ -172,10 +172,10 @@ const AITutorPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-kcs-blue-950 overflow-hidden">
+    <div className="portal-shell flex">
       <PortalSidebar />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex flex-col !overflow-hidden">
         {/* Header */}
         <div className="bg-white dark:bg-kcs-blue-950 border-b border-gray-100 dark:border-kcs-blue-800 px-6 py-4">
           <div className="flex items-center justify-between">

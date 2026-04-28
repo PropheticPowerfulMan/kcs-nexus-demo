@@ -151,6 +151,14 @@
   .sidebar-link.active {
     @apply bg-kcs-blue-700 text-white dark:bg-kcs-blue-600 shadow-kcs;
   }
+
+  .portal-shell {
+    @apply h-dvh overflow-hidden bg-gray-50 dark:bg-kcs-blue-950;
+  }
+
+  .portal-shell > main {
+    @apply min-w-0 flex-1 overflow-y-auto pt-16 lg:pt-0;
+  }
 }
 
 /* Custom scrollbar */
