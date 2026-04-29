@@ -161,6 +161,132 @@
   }
 }
 
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 1279px) {
+  .portal-shell {
+    min-height: 100dvh;
+  }
+
+  .portal-shell > main {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1023px) {
+  .portal-shell > main > .sticky:first-child {
+    position: sticky;
+    top: 64px;
+    z-index: 20;
+  }
+
+  .portal-shell > main > .sticky:first-child,
+  .portal-shell > main > div:first-child {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .portal-shell > main > .space-y-6,
+  .portal-shell > main > .p-6 {
+    padding: 1rem;
+  }
+
+  .portal-shell h1 {
+    font-size: 1.125rem;
+    line-height: 1.55rem;
+  }
+
+  .portal-shell h2 {
+    line-height: 1.35;
+  }
+
+  .portal-shell .grid {
+    min-width: 0;
+  }
+
+  .portal-shell table {
+    min-width: 680px;
+  }
+}
+
+@media (max-width: 767px) {
+  .portal-shell {
+    overflow: hidden;
+  }
+
+  .portal-shell > main {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .portal-shell > main > .sticky:first-child > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .portal-shell > main > .sticky:first-child .btn-primary,
+  .portal-shell > main > .sticky:first-child .btn-gold {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portal-shell .rounded-2xl {
+    border-radius: 1rem;
+  }
+
+  .portal-shell .p-6 {
+    padding: 1rem;
+  }
+
+  .portal-shell .p-5 {
+    padding: 0.95rem;
+  }
+
+  .portal-shell .gap-6 {
+    gap: 1rem;
+  }
+
+  .portal-shell .gap-4 {
+    gap: 0.75rem;
+  }
+
+  .portal-shell .text-2xl {
+    font-size: 1.35rem;
+    line-height: 1.85rem;
+  }
+
+  .portal-shell .text-3xl {
+    font-size: 1.65rem;
+    line-height: 2.05rem;
+  }
+
+  .portal-shell .btn-primary,
+  .portal-shell .btn-gold,
+  .portal-shell button,
+  .portal-shell a.sidebar-link {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 479px) {
+  .portal-shell > main > .space-y-6,
+  .portal-shell > main > .p-6 {
+    padding: 0.75rem;
+  }
+
+  .portal-shell .grid.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portal-shell .flex-wrap {
+    row-gap: 0.5rem;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

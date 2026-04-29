@@ -139,7 +139,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['performance', 'messages', 'calendar', 'profile', 'grades'].map((segment) => (
+        {['performance', 'messages', 'calendar', 'profile', 'grades', 'finance'].map((segment) => (
           <Route
             key={segment}
             path={`/portal/parent/${segment}`}
@@ -167,7 +167,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['courses', 'students', 'assignments', 'grades', 'messages'].map((segment) => (
+        {['courses', 'students', 'assignments', 'grades', 'reports', 'messages'].map((segment) => (
           <Route
             key={segment}
             path={`/portal/teacher/${segment}`}
@@ -195,7 +195,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['records', 'admissions', 'announcements', 'reports', 'messages', 'permissions'].map((segment) => (
+        {['records', 'admissions', 'announcements', 'reports', 'finance', 'messages', 'permissions'].map((segment) => (
           <Route
             key={segment}
             path={`/portal/staff/${segment}`}
@@ -241,7 +241,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['students', 'teachers', 'courses', 'admissions', 'news', 'media', 'analytics', 'settings'].map((segment) => (
+        {['students', 'teachers', 'courses', 'admissions', 'finance', 'reports', 'news', 'media', 'analytics', 'settings'].map((segment) => (
           <Route
             key={segment}
             path={`/admin/${segment}`}
