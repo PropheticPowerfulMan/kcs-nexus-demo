@@ -143,7 +143,8 @@ export const admissionsAPI = {
   getAll: (params?: object) => api.get('/admissions', { params }),
   getById: (id: string) => api.get(`/admissions/${id}`),
   getByNumber: (number: string) => api.get(`/admissions/track/${number}`),
-  create: (data: object) => api.post('/admissions', data),
+  create: (data: object | FormData) =>
+    api.post('/admissions', data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
   updateStatus: (id: string, status: string, notes?: string) =>
     api.patch(`/admissions/${id}/status`, { status, notes }),
   uploadDocument: (id: string, formData: FormData) =>

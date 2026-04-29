@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { SCHOOL_DIVISIONS, SCHOOL_LEVELS } from '@/constants/schoolLevels'
+import { admissionsAPI } from '@/services/api'
 
 /* ────────────── Animation helpers ────────────── */
 const fadeUp = {
@@ -58,6 +59,11 @@ const programs = SCHOOL_DIVISIONS.map((division, index) => ({
 /* ────────────── Zod Form Schema ────────────── */
 const STEPS = ['Student', 'Parent', 'Documents', 'Review'] as const
 type Step = (typeof STEPS)[number]
+const DOCUMENT_FIELDS = [
+  { key: 'birthCertificate', label: 'Birth Certificate' },
+  { key: 'transcript', label: 'Previous School Transcript' },
+  { key: 'additional', label: 'Additional Required Documents' },
+] as const
 
 const studentSchema = z.object({
   firstName:      z.string().min(2, 'Required'),
@@ -85,7 +91,11 @@ const AdmissionsPage = () => {
   const [activeStep, setActiveStep] = useState<Step>('Student')
   const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [parentData,  setParentData]  = useState<ParentData  | null>(null)
+  const [documents, setDocuments] = useState<Record<string, File | null>>({})
+  const [notes, setNotes] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [applicationId, setApplicationId] = useState('')
 
   const stepIdx = STEPS.indexOf(activeStep)
@@ -101,10 +111,47 @@ const AdmissionsPage = () => {
     setParentData(data)
     setActiveStep('Documents')
   }
-  const handleFinalSubmit = () => {
-    const id = 'KCS-' + Date.now().toString().slice(-6)
-    setApplicationId(id)
-    setSubmitted(true)
+  const handleDocumentChange = (key: string, files: FileList | null) => {
+    setDocuments((current) => ({ ...current, [key]: files?.[0] ?? null }))
+  }
+
+  const handleFinalSubmit = async () => {
+    if (!studentData || !parentData) return
+
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('firstName', studentData.firstName)
+      formData.append('lastName', studentData.lastName)
+      formData.append('dateOfBirth', studentData.dateOfBirth)
+      formData.append('gender', 'Not specified')
+      formData.append('nationality', studentData.nationality)
+      formData.append('gradeApplying', studentData.applyingGrade)
+      formData.append('previousSchool', studentData.currentSchool)
+      formData.append('languages', studentData.languages ?? '')
+      formData.append('parentName', parentData.parentName)
+      formData.append('relationship', parentData.relationship)
+      formData.append('parentEmail', parentData.email)
+      formData.append('parentPhone', parentData.phone)
+      formData.append('address', parentData.address)
+      formData.append('occupation', parentData.occupation ?? '')
+      formData.append('notes', notes)
+
+      Object.values(documents).forEach((file) => {
+        if (file) formData.append('documents', file)
+      })
+
+      const response = await admissionsAPI.create(formData)
+      const applicationNumber = response.data?.data?.applicationNumber
+      setApplicationId(applicationNumber || `KCS-${Date.now().toString().slice(-6)}`)
+      setSubmitted(true)
+    } catch {
+      setSubmitError('We could not submit the application. Please check the information and try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -387,18 +434,37 @@ const AdmissionsPage = () => {
                           <Upload size={18} className="text-kcs-blue-600" /> Upload Documents
                         </h3>
                         <div className="space-y-4">
-                          {['Birth Certificate', 'Previous School Transcript', 'Additional Required Documents'].map((doc) => (
-                            <div key={doc} className="flex items-center justify-between p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-kcs-blue-700 hover:border-kcs-blue-400 dark:hover:border-kcs-blue-500 transition-colors group">
+                          {DOCUMENT_FIELDS.map((doc) => (
+                            <div key={doc.key} className="flex items-center justify-between p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-kcs-blue-700 hover:border-kcs-blue-400 dark:hover:border-kcs-blue-500 transition-colors group">
                               <div className="flex items-center gap-3">
                                 <FileText size={20} className="text-gray-400 group-hover:text-kcs-blue-500 transition-colors" />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">{doc}</span>
+                                <div>
+                                  <span className="block text-sm text-gray-700 dark:text-gray-300">{doc.label}</span>
+                                  {documents[doc.key] && (
+                                    <span className="text-xs text-kcs-blue-600 dark:text-kcs-blue-300">{documents[doc.key]?.name}</span>
+                                  )}
+                                </div>
                               </div>
                               <label className="cursor-pointer text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-400 hover:underline">
                                 Upload PDF / JPG
-                                <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  className="hidden"
+                                  onChange={(event) => handleDocumentChange(doc.key, event.target.files)}
+                                />
                               </label>
                             </div>
                           ))}
+                        </div>
+                        <div className="mt-5">
+                          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Additional comments</label>
+                          <textarea
+                            value={notes}
+                            onChange={(event) => setNotes(event.target.value)}
+                            className="input-kcs min-h-28 resize-y"
+                            placeholder="Anything the admissions team should know?"
+                          />
                         </div>
                         <p className="text-xs text-gray-400 mt-3">* Documents can also be submitted in person at the KCS Admissions Office.</p>
                         <div className="flex justify-between pt-6">
@@ -457,12 +523,17 @@ const AdmissionsPage = () => {
                             </span>
                           </label>
                         </div>
+                        {submitError && (
+                          <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                            {submitError}
+                          </p>
+                        )}
                         <div className="flex justify-between">
                           <button onClick={() => setActiveStep('Documents')} className="btn-primary bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
                             Back
                           </button>
-                          <button onClick={handleFinalSubmit} className="btn-gold flex items-center gap-2">
-                            Submit Application <ArrowRight size={16} />
+                          <button onClick={handleFinalSubmit} disabled={submitting} className="btn-gold flex items-center gap-2 disabled:opacity-60">
+                            {submitting ? 'Submitting...' : 'Submit Application'} <ArrowRight size={16} />
                           </button>
                         </div>
                       </motion.div>
