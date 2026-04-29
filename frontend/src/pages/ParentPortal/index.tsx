@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Bell, TrendingUp, Award, CheckCircle2, AlertCircle,
@@ -109,8 +109,196 @@ const eventTypeColor = {
   event:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 }
 
+const getParentSegment = (pathname: string) => {
+  const segment = pathname.split('/').filter(Boolean).at(-1)
+  return !segment || segment === 'parent' || segment === 'dashboard' ? 'dashboard' : segment
+}
+
+const parentButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800'
+
+type ParentChild = typeof children[number]
+
+const ParentSectionView = ({ segment, selectedChild }: { segment: string; selectedChild: ParentChild }) => {
+  const [bookedEvent, setBookedEvent] = useState<string | null>(null)
+  const [messageSent, setMessageSent] = useState(false)
+  const childKey = selectedChild.name.split(' ')[0].toLowerCase() as 'elise' | 'david'
+  const childFirstName = selectedChild.name.split(' ')[0]
+
+  if (segment === 'performance' || segment === 'grades') {
+    const childReport = reportCards.find((card) => card.student.includes(childFirstName))
+    const childGrades = recentGrades.filter((grade) => grade.child === childFirstName)
+
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            ['GPA', selectedChild.gpa.toFixed(1), 'Semester average'],
+            ['Attendance', `${selectedChild.attendance}%`, 'Family visible'],
+            ['Class Rank', `#${selectedChild.rank}`, selectedChild.grade],
+          ].map(([label, value, sub]) => (
+            <div key={label} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+              <p className="mt-2 font-display text-4xl font-bold text-kcs-blue-900 dark:text-white">{value}</p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{sub}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">{selectedChild.name} Grades</h2>
+              <button className={parentButton}>Download parent copy</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-[620px] w-full text-sm">
+                <thead className="text-left text-xs text-gray-400">
+                  <tr className="border-b border-gray-100 dark:border-kcs-blue-800">
+                    <th className="pb-3 font-medium">Course</th>
+                    <th className="pb-3 font-medium">Assessment</th>
+                    <th className="pb-3 text-right font-medium">Grade</th>
+                    <th className="pb-3 text-right font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/50">
+                  {(childGrades.length ? childGrades : recentGrades.filter((grade) => grade.child === 'Elise')).map((grade) => (
+                    <tr key={`${grade.course}-${grade.assessment}`}>
+                      <td className="py-3 font-semibold text-kcs-blue-900 dark:text-white">{grade.course}</td>
+                      <td className="py-3 text-gray-500 dark:text-gray-400">{grade.assessment}</td>
+                      <td className="py-3 text-right font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{grade.grade}/{grade.max}</td>
+                      <td className="py-3 text-right text-gray-500 dark:text-gray-400">{grade.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {childReport && <p className="mt-4 rounded-xl bg-kcs-blue-50 p-4 text-sm text-kcs-blue-800 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-200">{childReport.teacherComment}</p>}
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Subject Balance</h2>
+            <ResponsiveContainer width="100%" height={260}>
+              <RadarChart data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <Radar dataKey={childKey} stroke="#1d4ed8" fill="#1d4ed8" fillOpacity={0.22} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'messages') {
+    const childMessages = teacherMessages.filter((message) => message.child === childFirstName)
+    return (
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Teacher Threads</h2>
+          <div className="space-y-3">
+            {(childMessages.length ? childMessages : teacherMessages).map((message) => (
+              <div key={message.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{message.teacher}</p>
+                  <span className="text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{message.subject}</span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{message.message}</p>
+                <p className="mt-2 text-xs text-gray-400">{message.time}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Write to School</h2>
+          <div className="grid gap-3">
+            <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+              <option>Homeroom Teacher</option>
+              <option>Academic Office</option>
+              <option>Finance Office</option>
+              <option>Discipline Office</option>
+            </select>
+            <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" value={`Regarding ${selectedChild.name}`} readOnly />
+            <textarea className="min-h-36 rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Type parent message..." />
+            <button className={parentButton} onClick={() => setMessageSent(true)}>Send message</button>
+            {messageSent && <p className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">Message saved for school communication and parent history.</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'calendar') {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {upcomingEvents.map((event) => (
+          <div key={event.title} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{event.date}</span>
+              <span className={`rounded-full px-2 py-1 text-xs font-semibold capitalize ${eventTypeColor[event.type as keyof typeof eventTypeColor]}`}>{event.type}</span>
+            </div>
+            <p className="mt-3 font-semibold text-kcs-blue-900 dark:text-white">{event.title}</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{event.desc}</p>
+            <button className="mt-4 w-full rounded-xl border border-kcs-blue-200 px-4 py-2.5 text-sm font-semibold text-kcs-blue-700 hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800" onClick={() => setBookedEvent(event.title)}>
+              {bookedEvent === event.title ? 'Added to family plan' : 'Add / book'}
+            </button>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (segment === 'finance') {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          {feeAccounts.filter((fee) => fee.family === 'Kabongo Family').map((fee) => (
+            <div key={fee.invoice} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{fee.invoice}</p>
+              <p className="mt-2 font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">${fee.balance}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{fee.student} - due {fee.dueDate}</p>
+              <button className="mt-4 w-full rounded-xl bg-kcs-gold-500 px-4 py-2.5 text-sm font-bold text-kcs-blue-950 hover:bg-kcs-gold-400">Pay / receipt</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'profile') {
+    return (
+      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">Kabongo Family</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Parent portal for Rachel Kabongo, guardian contacts, children, school documents, and communication preferences.</p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <a className="rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-center text-sm font-semibold text-white" href="mailto:rachel.kabongo@family.kcs.test">Email</a>
+            <a className="rounded-xl border border-gray-200 px-4 py-2.5 text-center text-sm font-semibold text-kcs-blue-700 dark:border-kcs-blue-700 dark:text-kcs-blue-200" href="tel:+243810000001">Call</a>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Children & Documents</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {children.map((child) => (
+              <div key={child.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                <p className="font-semibold text-kcs-blue-900 dark:text-white">{child.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{child.grade} - GPA {child.gpa}</p>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Documents: report card, transcript request, medical form</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <PortalSectionPanel />
+}
+
 const ParentPortal = () => {
   const { user } = useAuthStore()
+  const location = useLocation()
+  const activeSegment = getParentSegment(location.pathname)
   const [selectedChild, setSelectedChild] = useState(children[0])
 
   return (
@@ -156,7 +344,11 @@ const ParentPortal = () => {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
+          {activeSegment !== 'dashboard' ? (
+            <ParentSectionView segment={activeSegment} selectedChild={selectedChild} />
+          ) : (
+            <>
           <PortalSectionPanel />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -563,6 +755,8 @@ const ParentPortal = () => {
               ))}
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>

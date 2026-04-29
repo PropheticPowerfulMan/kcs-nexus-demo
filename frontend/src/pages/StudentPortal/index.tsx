@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, BarChart3, FileText, Calendar, Brain,
@@ -83,8 +83,238 @@ const priorityColors: Record<string, string> = {
   low: 'border-l-green-500',
 }
 
+const getStudentSegment = (pathname: string) => {
+  const segment = pathname.split('/').filter(Boolean).at(-1)
+  return !segment || segment === 'student' || segment === 'dashboard' ? 'dashboard' : segment
+}
+
+const studentActionButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-kcs-blue-800'
+
+const StudentSectionView = ({ segment }: { segment: string }) => {
+  const [localAssignments, setLocalAssignments] = useState(assignments)
+  const [messageSent, setMessageSent] = useState(false)
+
+  if (segment === 'grades') {
+    const reportCard = reportCards.find((card) => card.student === 'Elise Kabongo')
+    const transcript = transcripts.find((item) => item.student === 'Elise Kabongo')
+
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Final Average</p>
+            <p className="mt-2 font-display text-4xl font-bold text-kcs-blue-900 dark:text-white">{reportCard?.average ?? 0}%</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{reportCard?.term} - {reportCard?.principalStatus}</p>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Transcript</p>
+            <p className="mt-2 font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">GPA {transcript?.cumulativeGpa}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{transcript?.credits} credits - {transcript?.status}</p>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Teacher Comment</p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{reportCard?.teacherComment}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Current Grades</h2>
+              <button className={studentActionButton}>Download report card</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-[620px] w-full text-sm">
+                <thead className="text-left text-xs text-gray-400">
+                  <tr className="border-b border-gray-100 dark:border-kcs-blue-800">
+                    <th className="pb-3 font-medium">Subject</th>
+                    <th className="pb-3 font-medium">Latest assessment</th>
+                    <th className="pb-3 text-right font-medium">Score</th>
+                    <th className="pb-3 text-right font-medium">Letter</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/50">
+                  {subjectGrades.map((grade) => (
+                    <tr key={grade.subject}>
+                      <td className="py-3 font-semibold text-kcs-blue-900 dark:text-white">{grade.subject}</td>
+                      <td className="py-3 text-gray-500 dark:text-gray-400">{ecosystemGrades.find((item) => item.subject.includes(grade.subject) || grade.subject.includes(item.subject))?.assessment ?? 'Quarter grade'}</td>
+                      <td className="py-3 text-right font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{grade.grade}/100</td>
+                      <td className="py-3 text-right"><span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-300">{grade.letter}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">GPA Trend</h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={performanceData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[2.5, 4]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: '#0f2352', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '12px' }} />
+                <Area type="monotone" dataKey="gpa" stroke="#1d4ed8" strokeWidth={2.5} fill="#dbeafe" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'assignments') {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Assignment Center</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Submit work, track deadlines, and keep teachers updated.</p>
+            </div>
+            <button className={studentActionButton}>Upload new file</button>
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {localAssignments.map((assignment) => (
+            <div key={assignment.id} className={`rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 border-l-4 ${priorityColors[assignment.priority]}`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{assignment.title}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{assignment.course} - {assignment.due}</p>
+                </div>
+                <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusColors[assignment.status]}`}>{assignment.status}</span>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button
+                  className={studentActionButton}
+                  disabled={assignment.status === 'submitted' || assignment.status === 'graded'}
+                  onClick={() => setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'submitted' } : item))}
+                >
+                  Submit work
+                </button>
+                <button
+                  className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-kcs-blue-700 transition-colors hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800"
+                  onClick={() => setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'graded' } : item))}
+                >
+                  Mark reviewed
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'timetable') {
+    return (
+      <div className="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Full Timetable</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {schedule.map((item, index) => (
+              <div key={`${item.time}-${item.subject}`} className={`rounded-xl border p-4 ${index === 1 ? 'border-kcs-blue-300 bg-kcs-blue-50 dark:border-kcs-blue-600 dark:bg-kcs-blue-800/50' : 'border-gray-100 bg-gray-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30'}`}>
+                <p className="text-xs font-semibold text-gray-400">{item.time}</p>
+                <p className="mt-1 font-semibold text-kcs-blue-900 dark:text-white">{item.subject}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{item.room}{item.teacher ? ` - ${item.teacher}` : ''}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Events Connected to Schedule</h2>
+          <div className="space-y-3">
+            {ecosystemEvents.filter((item) => item.target.includes('student')).map((event) => (
+              <div key={event.title} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                <p className="font-semibold text-kcs-blue-900 dark:text-white">{event.title}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{event.date} - {event.type}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'messages') {
+    return (
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Inbox</h2>
+          <div className="space-y-3">
+            {internalThreads.slice(0, 4).map((thread) => (
+              <button key={thread.subject} className="w-full rounded-xl bg-gray-50 p-4 text-left transition-colors hover:bg-kcs-blue-50 dark:bg-kcs-blue-800/30 dark:hover:bg-kcs-blue-800">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{thread.subject}</p>
+                  <span className="rounded-full bg-kcs-blue-100 px-2 py-1 text-xs font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">{thread.unread}</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{thread.channel} - {thread.participants.join(', ')}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">New Message</h2>
+          <div className="grid gap-3">
+            <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+              <option>Academic Office</option>
+              <option>Mrs. Diallo - English</option>
+              <option>Mr. Belanger - AP Calculus</option>
+            </select>
+            <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Subject" />
+            <textarea className="min-h-36 rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Write your message..." />
+            <button className={studentActionButton} onClick={() => setMessageSent(true)}>Send message</button>
+            {messageSent && <p className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">Message prepared and saved in the portal thread.</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (segment === 'profile') {
+    return (
+      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-kcs-blue-100 text-xl font-bold text-kcs-blue-700 dark:bg-kcs-blue-800 dark:text-kcs-blue-200">EK</div>
+            <div>
+              <h2 className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">Elise Kabongo</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Grade 11 A - Student ID stu-elise</p>
+            </div>
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{ecosystemStudents[0].aiInsight}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Profile Details</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ['Guardian', 'Rachel Kabongo'],
+              ['Email', 'elise.kabongo@student.kcs.test'],
+              ['Homeroom', 'Grade 11 - Room 204'],
+              ['Counselor', 'Mrs. Diallo'],
+              ['Learning plan', 'AP STEM track'],
+              ['Documents', 'Transcript, Medical form, Photo ID'],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                <p className="mt-1 font-semibold text-kcs-blue-900 dark:text-white">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <PortalSectionPanel />
+}
+
 const StudentPortal = () => {
   const { user } = useAuthStore()
+  const location = useLocation()
+  const activeSegment = getStudentSegment(location.pathname)
   const [activeView, setActiveView] = useState<'dashboard' | 'grades' | 'assignments' | 'schedule' | 'ai-tutor'>('dashboard')
 
   return (
@@ -117,7 +347,11 @@ const StudentPortal = () => {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
+          {activeSegment !== 'dashboard' ? (
+            <StudentSectionView segment={activeSegment} />
+          ) : (
+            <>
           <PortalSectionPanel />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -432,6 +666,8 @@ const StudentPortal = () => {
               ))}
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>
