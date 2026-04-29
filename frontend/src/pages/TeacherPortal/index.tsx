@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -76,6 +77,201 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const meta = sectionTitles[segment] ?? sectionTitles.reports
   const Icon = meta.icon
+  const superAdminStudentPool = useMemo(() => [
+    ...ecosystemStudents,
+    {
+      id: 'stu-grace',
+      name: 'Grace Mwamba',
+      grade: 'Grade 10',
+      section: 'A',
+      parentId: 'parent-mwamba',
+      advisor: 'Mrs. Diallo',
+      average: 84,
+      gpa: 3.3,
+      rank: 11,
+      attendance: 93,
+      risk: 'low',
+      strengths: ['Research notes', 'Peer collaboration'],
+      weaknesses: ['Lab vocabulary'],
+      aiInsight: 'Grace is ready for a science extension project and needs targeted academic vocabulary support.',
+    },
+    {
+      id: 'stu-naomi',
+      name: 'Naomi Kanku',
+      grade: 'Grade 9',
+      section: 'C',
+      parentId: 'parent-kanku',
+      advisor: 'Dr. Mukendi',
+      average: 72,
+      gpa: 2.4,
+      rank: 24,
+      attendance: 84,
+      risk: 'high',
+      strengths: ['Curiosity', 'Practical labs'],
+      weaknesses: ['Attendance rhythm', 'Written explanations'],
+      aiInsight: 'Naomi needs an attendance intervention, short written-response practice, and weekly parent check-ins.',
+    },
+  ], [])
+
+  const [actionMessage, setActionMessage] = useState('')
+  const [courses, setCourses] = useState(() =>
+    subjects.map((subject) => ({
+      ...subject,
+      studentIds: subject.className.includes('11') ? ['stu-elise'] : subject.className.includes('8') ? ['stu-david'] : [],
+      status: 'active',
+    })),
+  )
+  const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
+  const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
+  const [assignmentList, setAssignmentList] = useState(() => ecosystemAssignments)
+  const [gradeEntries, setGradeEntries] = useState(() => ecosystemGrades)
+  const [reportList, setReportList] = useState(() => reportCards)
+  const [disciplineList, setDisciplineList] = useState(() => disciplineReports)
+  const [inbox, setInbox] = useState(() => [
+    ...messages.map((message) => ({ ...message, body: message.subject, requiresResponse: message.id === 3 })),
+    ...ecosystemMessages.filter((message) => message.toRole === 'teacher').map((message, index) => ({
+      id: index + 10,
+      from: message.from,
+      subject: message.subject,
+      body: message.body,
+      time: message.requiresResponse ? 'Response needed' : 'FYI',
+      requiresResponse: message.requiresResponse,
+    })),
+  ])
+
+  const [courseDraft, setCourseDraft] = useState({
+    name: 'Integrated Science Lab',
+    className: 'Grade 10A',
+    room: 'Lab 2',
+    studentId: superAdminStudentPool[0].id,
+  })
+  const [selectedStudentId, setSelectedStudentId] = useState(superAdminStudentPool[0].id)
+  const [attendanceDraft, setAttendanceDraft] = useState({
+    studentId: superAdminStudentPool[0].id,
+    date: 'Apr 29',
+    status: 'present',
+    className: 'Grade 11A',
+  })
+  const [assignmentDraft, setAssignmentDraft] = useState({
+    studentId: superAdminStudentPool[0].id,
+    title: 'Exit ticket reflection',
+    subject: 'AP Biology',
+    due: 'Tomorrow',
+    status: 'pending',
+    priority: 'medium',
+  })
+  const [gradeDraft, setGradeDraft] = useState({
+    studentId: superAdminStudentPool[0].id,
+    subject: 'AP Biology',
+    assessment: 'Quick Check',
+    score: 88,
+    max: 100,
+    date: 'Apr 29',
+  })
+  const [reportDraft, setReportDraft] = useState({
+    student: superAdminStudentPool[0].name,
+    term: 'Term 3',
+    average: 88,
+    conduct: 'Good',
+    teacherComment: 'Shows steady progress and responds well to targeted feedback.',
+  })
+  const [disciplineDraft, setDisciplineDraft] = useState({
+    studentId: superAdminStudentPool[1].id,
+    category: 'Classroom conduct',
+    incident: 'Needs a documented follow-up after repeated disruption during group activity.',
+    actionTaken: 'Teacher conference completed and behavior target assigned.',
+    followUp: 'Review progress in one week with advisor.',
+    level: 'medium',
+  })
+  const [messageDraft, setMessageDraft] = useState({
+    to: 'Academic Coordinator',
+    subject: 'Student support update',
+    body: 'Please review the new intervention note and confirm next steps.',
+  })
+
+  const findStudent = (studentId: string) => superAdminStudentPool.find((student) => student.id === studentId)
+  const runAction = (message: string) => setActionMessage(message)
+
+  const createCourse = () => {
+    const nextCourse = {
+      id: `course-${Date.now()}`,
+      name: courseDraft.name,
+      teacher: 'Dr. Mukendi',
+      className: courseDraft.className,
+      room: courseDraft.room,
+      studentIds: courseDraft.studentId ? [courseDraft.studentId] : [],
+      status: 'draft',
+    }
+    setCourses((current) => [nextCourse, ...current])
+    const student = findStudent(courseDraft.studentId)
+    if (student && !teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
+    runAction(`${nextCourse.name} created and prepared for Super Admin sync.`)
+  }
+
+  const importStudent = () => {
+    const student = findStudent(selectedStudentId)
+    if (!student) return
+    setTeacherStudents((current) => current.some((item) => item.id === student.id) ? current : [student, ...current])
+    runAction(`${student.name} imported from the Super Admin student registry.`)
+  }
+
+  const addAttendance = () => {
+    const student = findStudent(attendanceDraft.studentId)
+    setAttendanceEntries((current) => [{ ...attendanceDraft }, ...current])
+    runAction(`${student?.name ?? 'Student'} marked ${attendanceDraft.status}; parent/admin visibility queued.`)
+  }
+
+  const createAssignment = () => {
+    const student = findStudent(assignmentDraft.studentId)
+    setAssignmentList((current) => [{ id: `asg-${Date.now()}`, ...assignmentDraft }, ...current])
+    runAction(`${assignmentDraft.title} assigned to ${student?.name ?? 'selected student'}.`)
+  }
+
+  const addGrade = () => {
+    const student = findStudent(gradeDraft.studentId)
+    setGradeEntries((current) => [{ ...gradeDraft, teacher: 'Dr. Mukendi' }, ...current])
+    runAction(`${gradeDraft.assessment} saved for ${student?.name ?? 'selected student'} and ready for report cards.`)
+  }
+
+  const createReport = () => {
+    setReportList((current) => [{ ...reportDraft, principalStatus: 'Pending review', download: 'Draft' }, ...current])
+    runAction(`${reportDraft.student}'s report draft created for principal approval.`)
+  }
+
+  const createDisciplineReport = () => {
+    const student = findStudent(disciplineDraft.studentId)
+    setDisciplineList((current) => [{
+      id: `disc-${String(current.length + 1).padStart(3, '0')}`,
+      studentId: disciplineDraft.studentId,
+      student: student?.name ?? 'Selected student',
+      date: 'Apr 29',
+      level: disciplineDraft.level,
+      category: disciplineDraft.category,
+      incident: disciplineDraft.incident,
+      context: 'Teacher-created record from classroom observation and linked student data.',
+      actionTaken: disciplineDraft.actionTaken,
+      followUp: disciplineDraft.followUp,
+      parentContact: 'Draft message prepared',
+      status: 'Open',
+    }, ...current])
+    runAction(`Detailed discipline report opened for ${student?.name ?? 'selected student'}.`)
+  }
+
+  const sendMessage = () => {
+    setInbox((current) => [{
+      id: Date.now(),
+      from: `To ${messageDraft.to}`,
+      subject: messageDraft.subject,
+      body: messageDraft.body,
+      time: 'Just now',
+      requiresResponse: false,
+    }, ...current])
+    runAction(`Message sent to ${messageDraft.to} and logged in the teacher thread.`)
+  }
+
+  const inputClass = 'input-kcs py-2 text-sm'
+  const panelClass = 'rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50'
+  const compactButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800'
 
   return (
     <section className="space-y-6">
@@ -91,28 +287,77 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-primary flex items-center gap-2 py-2 text-sm"><CheckCircle2 size={16} /> Save updates</button>
-            <button className="btn-gold flex items-center gap-2 py-2 text-sm"><FileText size={16} /> Export PDF</button>
+            <button onClick={() => runAction('Workspace saved locally and queued for backend sync.')} className="btn-primary flex items-center gap-2 py-2 text-sm"><CheckCircle2 size={16} /> Save updates</button>
+            <button onClick={() => runAction(`${meta.title} export prepared.`)} className="btn-gold flex items-center gap-2 py-2 text-sm"><FileText size={16} /> Export PDF</button>
           </div>
         </div>
       </div>
 
+      {actionMessage && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300">
+          {actionMessage}
+        </div>
+      )}
+
       {segment === 'courses' && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {subjects.map((subject) => (
-            <div key={subject.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-              <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.className}</p>
-              <h3 className="mt-2 font-bold text-kcs-blue-900 dark:text-white">{subject.name}</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subject.room}</p>
-              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">Teacher: {subject.teacher}</p>
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+          <div className={panelClass}>
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create a course</h3>
+            <div className="mt-4 grid gap-3">
+              <input className={inputClass} value={courseDraft.name} onChange={(event) => setCourseDraft((draft) => ({ ...draft, name: event.target.value }))} placeholder="Course name" />
+              <input className={inputClass} value={courseDraft.className} onChange={(event) => setCourseDraft((draft) => ({ ...draft, className: event.target.value }))} placeholder="Class / section" />
+              <input className={inputClass} value={courseDraft.room} onChange={(event) => setCourseDraft((draft) => ({ ...draft, room: event.target.value }))} placeholder="Room" />
+              <select className={inputClass} value={courseDraft.studentId} onChange={(event) => setCourseDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                {superAdminStudentPool.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section}</option>)}
+              </select>
+              <button onClick={createCourse} className={compactButton}>Create course and attach student</button>
             </div>
-          ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {courses.map((subject) => (
+              <div key={subject.id} className={panelClass}>
+                <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.className}</p>
+                <h3 className="mt-2 font-bold text-kcs-blue-900 dark:text-white">{subject.name}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subject.room} - {subject.teacher}</p>
+                <p className="mt-3 text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{subject.studentIds.length} student(s) attached - {subject.status}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {superAdminStudentPool.slice(0, 3).map((student) => (
+                    <button
+                      key={student.id}
+                      onClick={() => {
+                        setCourses((current) => current.map((course) => course.id === subject.id && !course.studentIds.includes(student.id) ? { ...course, studentIds: [...course.studentIds, student.id] } : course))
+                        if (!teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
+                        runAction(`${student.name} attached to ${subject.name}.`)
+                      }}
+                      className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:bg-kcs-blue-800/40 dark:text-gray-300"
+                    >
+                      + {student.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {segment === 'students' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {ecosystemStudents.map((student) => (
+        <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className={panelClass}>
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Import from Super Admin registry</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Teacher-created rosters must be based on official school records.</p>
+            <div className="mt-4 grid gap-3">
+              <select className={inputClass} value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)}>
+                {superAdminStudentPool.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section} - {student.risk} risk</option>)}
+              </select>
+              <button onClick={importStudent} className={compactButton}>Add to my students</button>
+            </div>
+            <div className="mt-5 rounded-xl bg-kcs-blue-50 p-4 text-sm text-kcs-blue-800 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-200">
+              {superAdminStudentPool.length} verified students available from the school registry.
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+          {teacherStudents.map((student) => (
             <div key={student.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -129,6 +374,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{student.aiInsight}</p>
             </div>
           ))}
+          </div>
         </div>
       )}
 
@@ -136,11 +382,25 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
         <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Daily Register</h3>
+            <div className="mb-4 grid gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+              <select className={inputClass} value={attendanceDraft.studentId} onChange={(event) => setAttendanceDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+              </select>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <input className={inputClass} value={attendanceDraft.date} onChange={(event) => setAttendanceDraft((draft) => ({ ...draft, date: event.target.value }))} />
+                <select className={inputClass} value={attendanceDraft.status} onChange={(event) => setAttendanceDraft((draft) => ({ ...draft, status: event.target.value }))}>
+                  <option value="present">Present</option>
+                  <option value="late">Late</option>
+                  <option value="absent">Absent</option>
+                </select>
+                <button onClick={addAttendance} className={compactButton}>Mark</button>
+              </div>
+            </div>
             <div className="space-y-3">
-              {ecosystemAttendance.map((record) => {
-                const student = ecosystemStudents.find((item) => item.id === record.studentId)
+              {attendanceEntries.map((record, index) => {
+                const student = findStudent(record.studentId)
                 return (
-                  <div key={`${record.studentId}-${record.date}`} className="flex items-center justify-between rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                  <div key={`${record.studentId}-${record.date}-${index}`} className="flex items-center justify-between rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
                     <div>
                       <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{record.date} - {record.className}</p>
@@ -165,9 +425,29 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       )}
 
       {segment === 'assignments' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {ecosystemAssignments.map((assignment) => {
-            const student = ecosystemStudents.find((item) => item.id === assignment.studentId)
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+          <div className={panelClass}>
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create assignment</h3>
+            <div className="mt-4 grid gap-3">
+              <select className={inputClass} value={assignmentDraft.studentId} onChange={(event) => setAssignmentDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+              </select>
+              <input className={inputClass} value={assignmentDraft.title} onChange={(event) => setAssignmentDraft((draft) => ({ ...draft, title: event.target.value }))} />
+              <input className={inputClass} value={assignmentDraft.subject} onChange={(event) => setAssignmentDraft((draft) => ({ ...draft, subject: event.target.value }))} />
+              <div className="grid gap-2 sm:grid-cols-3">
+                <input className={inputClass} value={assignmentDraft.due} onChange={(event) => setAssignmentDraft((draft) => ({ ...draft, due: event.target.value }))} />
+                <select className={inputClass} value={assignmentDraft.priority} onChange={(event) => setAssignmentDraft((draft) => ({ ...draft, priority: event.target.value }))}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <button onClick={createAssignment} className={compactButton}>Assign</button>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+          {assignmentList.map((assignment) => {
+            const student = findStudent(assignment.studentId)
             return (
               <div key={assignment.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
                 <div className="flex items-start justify-between gap-3">
@@ -181,6 +461,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               </div>
             )
           })}
+          </div>
         </div>
       )}
 
@@ -188,11 +469,23 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Recent Grade Entries</h3>
+            <div className="mb-4 grid gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+              <select className={inputClass} value={gradeDraft.studentId} onChange={(event) => setGradeDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+              </select>
+              <div className="grid gap-2 md:grid-cols-5">
+                <input className={inputClass} value={gradeDraft.subject} onChange={(event) => setGradeDraft((draft) => ({ ...draft, subject: event.target.value }))} />
+                <input className={inputClass} value={gradeDraft.assessment} onChange={(event) => setGradeDraft((draft) => ({ ...draft, assessment: event.target.value }))} />
+                <input className={inputClass} type="number" value={gradeDraft.score} onChange={(event) => setGradeDraft((draft) => ({ ...draft, score: Number(event.target.value) }))} />
+                <input className={inputClass} value={gradeDraft.date} onChange={(event) => setGradeDraft((draft) => ({ ...draft, date: event.target.value }))} />
+                <button onClick={addGrade} className={compactButton}>Add</button>
+              </div>
+            </div>
             <div className="space-y-3">
-              {ecosystemGrades.map((grade) => {
-                const student = ecosystemStudents.find((item) => item.id === grade.studentId)
+              {gradeEntries.map((grade, index) => {
+                const student = findStudent(grade.studentId)
                 return (
-                  <div key={`${grade.studentId}-${grade.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                  <div key={`${grade.studentId}-${grade.assessment}-${index}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
                     <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name} - {grade.subject}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{grade.assessment} - {grade.score}/{grade.max} - {grade.date}</p>
                   </div>
@@ -215,8 +508,24 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       )}
 
       {segment === 'reports' && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {reportCards.map((card) => (
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+          <div className={panelClass}>
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Draft report card</h3>
+            <div className="mt-4 grid gap-3">
+              <select className={inputClass} value={reportDraft.student} onChange={(event) => setReportDraft((draft) => ({ ...draft, student: event.target.value }))}>
+                {teacherStudents.map((student) => <option key={student.id} value={student.name}>{student.name}</option>)}
+              </select>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input className={inputClass} value={reportDraft.term} onChange={(event) => setReportDraft((draft) => ({ ...draft, term: event.target.value }))} />
+                <input className={inputClass} type="number" value={reportDraft.average} onChange={(event) => setReportDraft((draft) => ({ ...draft, average: Number(event.target.value) }))} />
+              </div>
+              <input className={inputClass} value={reportDraft.conduct} onChange={(event) => setReportDraft((draft) => ({ ...draft, conduct: event.target.value }))} />
+              <textarea className={inputClass} value={reportDraft.teacherComment} onChange={(event) => setReportDraft((draft) => ({ ...draft, teacherComment: event.target.value }))} rows={4} />
+              <button onClick={createReport} className={compactButton}>Create report draft</button>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+          {reportList.map((card, index) => (
             <div key={card.student} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -229,12 +538,32 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               <p className="mt-3 text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{card.download}</p>
             </div>
           ))}
+          </div>
         </div>
       )}
 
       {segment === 'discipline' && (
-        <div className="space-y-4">
-          {disciplineReports.map((report) => (
+        <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className={panelClass}>
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Open discipline report</h3>
+            <div className="mt-4 grid gap-3">
+              <select className={inputClass} value={disciplineDraft.studentId} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
+              </select>
+              <input className={inputClass} value={disciplineDraft.category} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, category: event.target.value }))} />
+              <textarea className={inputClass} value={disciplineDraft.incident} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, incident: event.target.value }))} rows={3} />
+              <textarea className={inputClass} value={disciplineDraft.actionTaken} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, actionTaken: event.target.value }))} rows={3} />
+              <textarea className={inputClass} value={disciplineDraft.followUp} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, followUp: event.target.value }))} rows={3} />
+              <select className={inputClass} value={disciplineDraft.level} onChange={(event) => setDisciplineDraft((draft) => ({ ...draft, level: event.target.value }))}>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <button onClick={createDisciplineReport} className={compactButton}>Create detailed report</button>
+            </div>
+          </div>
+          <div className="space-y-4">
+          {disciplineList.map((report) => (
             <article key={report.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -263,6 +592,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               </div>
             </article>
           ))}
+          </div>
         </div>
       )}
 
@@ -271,16 +601,23 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Teacher Inbox</h3>
             <div className="space-y-3">
-              {[...messages, ...ecosystemMessages.filter((message) => message.toRole === 'teacher').map((message, index) => ({ id: index + 10, from: message.from, subject: message.subject, time: message.requiresResponse ? 'Response needed' : 'FYI' }))].map((message) => (
+              {inbox.map((message) => (
                 <div key={`${message.id}-${message.subject}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
                   <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{message.from}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{message.subject} - {message.time}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{message.body}</p>
                 </div>
               ))}
             </div>
           </div>
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Active Threads</h3>
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Compose and active threads</h3>
+            <div className="mb-4 grid gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+              <input className={inputClass} value={messageDraft.to} onChange={(event) => setMessageDraft((draft) => ({ ...draft, to: event.target.value }))} />
+              <input className={inputClass} value={messageDraft.subject} onChange={(event) => setMessageDraft((draft) => ({ ...draft, subject: event.target.value }))} />
+              <textarea className={inputClass} value={messageDraft.body} onChange={(event) => setMessageDraft((draft) => ({ ...draft, body: event.target.value }))} rows={3} />
+              <button onClick={sendMessage} className={compactButton}>Send message</button>
+            </div>
             <div className="space-y-3">
               {internalThreads.map((thread) => (
                 <div key={thread.subject} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
