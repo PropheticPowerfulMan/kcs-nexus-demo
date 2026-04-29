@@ -16,6 +16,8 @@ const Header = () => {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
@@ -29,10 +31,16 @@ const Header = () => {
   useEffect(() => {
     if (!mobileOpen) return
 
-    const closeOnAppClick = () => setMobileOpen(false)
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (headerRef.current?.contains(target) || mobileMenuRef.current?.contains(target)) {
+        return
+      }
+      setMobileOpen(false)
+    }
 
-    document.addEventListener('pointerdown', closeOnAppClick, true)
-    return () => document.removeEventListener('pointerdown', closeOnAppClick, true)
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
   }, [mobileOpen])
 
   const currentLanguage = (i18n.resolvedLanguage || language).startsWith('fr') ? 'fr' : 'en'
@@ -59,11 +67,12 @@ const Header = () => {
 
   return (
     <header
+      ref={headerRef}
       className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 transition-all duration-500"
     >
       <div className="container-custom">
         <div
-          className={`flex h-[76px] items-center justify-between gap-3 rounded-full px-3 sm:px-4 transition-all duration-500 ${
+          className={`flex h-16 items-center justify-between gap-2 rounded-2xl px-3 transition-all duration-500 sm:h-[76px] sm:gap-3 sm:rounded-full sm:px-4 ${
             scrolled || !isHomePage
               ? 'github-glass dark:github-glass-dark'
               : 'border border-white/20 bg-kcs-blue-950/26 shadow-kcs backdrop-blur-2xl'
@@ -123,7 +132,7 @@ const Header = () => {
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+              className={`flex h-10 items-center gap-1.5 rounded-full px-2.5 text-sm font-semibold transition-all duration-200 sm:px-3 ${
                 scrolled || !isHomePage
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -137,7 +146,7 @@ const Header = () => {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`rounded-full p-2 transition-all duration-200 ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${
                 scrolled || !isHomePage
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -196,7 +205,7 @@ const Header = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={`rounded-full p-2 transition-all duration-200 lg:hidden ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 lg:hidden ${
                 scrolled || !isHomePage
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white hover:bg-white/10'
@@ -220,13 +229,14 @@ const Header = () => {
             className="lg:hidden overflow-hidden"
           >
             <div className="container-custom py-3">
-              <div className="github-glass dark:github-glass-dark space-y-1 rounded-[28px] p-3">
+              <div ref={mobileMenuRef} className="github-glass dark:github-glass-dark max-h-[calc(100dvh-92px)] space-y-1 overflow-y-auto rounded-[24px] p-3 sm:rounded-[28px]">
               {navItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
+                  onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    `flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-kcs-blue-700 text-white'
                         : 'text-kcs-blue-900 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
@@ -240,15 +250,15 @@ const Header = () => {
 
               <div className="pt-3 mt-3 border-t border-gray-100 dark:border-kcs-blue-800 flex gap-2">
                 {isAuthenticated ? (
-                  <Link to={dashboardPath} className="flex-1 btn-primary text-center text-sm py-2.5">
+                  <Link to={dashboardPath} onClick={() => setMobileOpen(false)} className="flex-1 btn-primary text-center text-sm py-2.5">
                     {t('nav.dashboard')}
                   </Link>
                 ) : (
                   <>
-                    <Link to="/login" className="flex-1 btn-primary text-center text-sm py-2.5">
+                    <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 btn-primary text-center text-sm py-2.5">
                       {t('nav.login')}
                     </Link>
-                    <Link to="/admissions" className="flex-1 rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-center text-sm font-bold text-white">
+                    <Link to="/admissions" onClick={() => setMobileOpen(false)} className="flex-1 rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-center text-sm font-bold text-white">
                       {t('nav.applyNow')}
                     </Link>
                   </>

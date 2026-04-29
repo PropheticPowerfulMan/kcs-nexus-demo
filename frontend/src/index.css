@@ -215,6 +215,37 @@
 }
 
 @media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .container-custom {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  header .container-custom {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  header a,
+  header button {
+    touch-action: manipulation;
+  }
+
+  header .btn-primary,
+  header .btn-gold {
+    min-height: 44px;
+  }
+
+  main img,
+  main iframe,
+  main video {
+    max-width: 100%;
+  }
+
   .portal-shell {
     overflow: hidden;
   }

@@ -62,7 +62,7 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-kcs-blue-950">
-      <section className="relative overflow-hidden bg-kcs-blue-950 py-24 text-white">
+      <section className="relative overflow-hidden bg-kcs-blue-950 pb-16 pt-28 text-white sm:py-24">
         <div className="absolute inset-0 hero-overlay" />
         <div className="absolute inset-0 dots-bg opacity-30" />
         <div className="relative container-custom">
@@ -70,19 +70,19 @@ const ContactPage = () => {
             <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-1.5 text-sm text-kcs-gold-300">
               <Mail size={14} /> Contact KCS
             </span>
-            <h1 className="mb-4 text-4xl font-bold font-display md:text-6xl">Let&apos;s Start A Conversation</h1>
-            <p className="max-w-2xl text-lg text-kcs-blue-100">
+            <h1 className="mb-4 text-3xl font-bold font-display leading-tight sm:text-4xl md:text-6xl">Let&apos;s Start A Conversation</h1>
+            <p className="max-w-2xl text-base leading-relaxed text-kcs-blue-100 sm:text-lg">
               Reach the admissions office, leadership team, or support staff. We respond promptly and can help you plan a visit, application, or transfer.
             </p>
           </motion.div>
         </div>
       </section>
 
-      <section className="section-padding bg-gray-50 dark:bg-kcs-blue-900/20">
+      <section className="bg-gray-50 py-12 dark:bg-kcs-blue-900/20 sm:py-16 lg:py-24">
         <div className="container-custom grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
           <AnimSection className="space-y-6">
-            <div className="rounded-3xl bg-white p-6 shadow-kcs dark:bg-kcs-blue-900/50 dark:border dark:border-kcs-blue-800">
-              <h2 className="mb-5 text-2xl font-bold font-display text-kcs-blue-900 dark:text-white">Contact Details</h2>
+            <div className="rounded-2xl bg-white p-4 shadow-kcs dark:bg-kcs-blue-900/50 dark:border dark:border-kcs-blue-800 sm:rounded-3xl sm:p-6">
+              <h2 className="mb-5 text-xl font-bold font-display text-kcs-blue-900 dark:text-white sm:text-2xl">Contact Details</h2>
               <div className="space-y-4">
                 {[
                   { icon: MapPin, title: 'Campus Address', body: 'Avenue de la Republique n° 1, Macampagne, Ngaliema, Kinshasa, DRC, Ref. 80 jours' },
@@ -92,13 +92,13 @@ const ContactPage = () => {
                 ].map((item) => {
                   const Icon = item.icon
                   return (
-                    <div key={item.title} className="flex gap-4 rounded-2xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-kcs-blue-100 text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">
+                    <div key={item.title} className="flex min-w-0 gap-3 rounded-2xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30 sm:gap-4 sm:p-4">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-kcs-blue-100 text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300 sm:h-11 sm:w-11 sm:rounded-2xl">
                         <Icon size={20} />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
-                        <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{item.body}</p>
+                        <p className="mt-1 break-words text-sm leading-relaxed text-gray-500 dark:text-gray-400">{item.body}</p>
                       </div>
                     </div>
                   )
@@ -106,11 +106,11 @@ const ContactPage = () => {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 sm:rounded-3xl">
               <iframe
                 title="KCS Campus Map"
                 src="https://www.google.com/maps?q=Kinshasa%2C%20DR%20Congo&z=12&output=embed"
-                className="h-[340px] w-full"
+                className="h-[240px] w-full sm:h-[340px]"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
@@ -118,9 +118,9 @@ const ContactPage = () => {
           </AnimSection>
 
           <AnimSection>
-            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 md:p-8">
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 sm:rounded-3xl sm:p-6 md:p-8">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold font-display text-kcs-blue-900 dark:text-white">Send A Message</h2>
+                <h2 className="text-xl font-bold font-display text-kcs-blue-900 dark:text-white sm:text-2xl">Send A Message</h2>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   Use the form below for admissions inquiries, partnership requests, or general questions.
                 </p>
@@ -165,7 +165,7 @@ const ContactPage = () => {
                   <textarea {...form.register('message')} className="input-kcs min-h-[160px] resize-y" placeholder="Tell us more about your request..." />
                   {form.formState.errors.message && <p className="mt-1 text-xs text-red-500">{form.formState.errors.message.message}</p>}
                 </div>
-                <button type="submit" disabled={sending} className="btn-gold inline-flex items-center gap-2 disabled:opacity-60">
+                <button type="submit" disabled={sending} className="btn-gold inline-flex w-full items-center justify-center gap-2 disabled:opacity-60 sm:w-auto">
                   <Send size={16} /> {sending ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
