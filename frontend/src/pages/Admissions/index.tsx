@@ -87,6 +87,44 @@ type StudentData = z.infer<typeof studentSchema>
 type ParentData  = z.infer<typeof parentSchema>
 
 const SCHOOL_ADMISSIONS_EMAIL = 'kinshasachristianschool@gmail.com'
+const ADMIN_ADMISSIONS_STORAGE_KEY = 'kcs-admin-admission-submissions'
+
+const saveApplicationForAdmin = (
+  applicationNumber: string,
+  studentData: StudentData,
+  parentData: ParentData,
+  notes: string,
+  documents: Record<string, File | null>,
+) => {
+  if (typeof window === 'undefined') return
+
+  const existing = JSON.parse(window.localStorage.getItem(ADMIN_ADMISSIONS_STORAGE_KEY) || '[]')
+  const nextApplication = {
+    id: applicationNumber,
+    applicationNumber,
+    firstName: studentData.firstName,
+    lastName: studentData.lastName,
+    studentName: `${studentData.firstName} ${studentData.lastName}`,
+    dateOfBirth: studentData.dateOfBirth,
+    nationality: studentData.nationality,
+    gradeApplying: studentData.applyingGrade,
+    previousSchool: studentData.currentSchool,
+    languages: studentData.languages ?? '',
+    parentName: parentData.parentName,
+    parentEmail: parentData.email,
+    parentPhone: parentData.phone,
+    relationship: parentData.relationship,
+    address: parentData.address,
+    occupation: parentData.occupation ?? '',
+    notes,
+    documents: Object.values(documents).filter(Boolean).map((file) => file?.name),
+    status: 'SUBMITTED',
+    submittedAt: new Date().toISOString(),
+  }
+
+  const withoutDuplicate = existing.filter((item: { applicationNumber?: string }) => item.applicationNumber !== applicationNumber)
+  window.localStorage.setItem(ADMIN_ADMISSIONS_STORAGE_KEY, JSON.stringify([nextApplication, ...withoutDuplicate]))
+}
 
 const sendAdmissionFallbackEmail = async (
   applicationNumber: string,
@@ -196,6 +234,7 @@ const AdmissionsPage = () => {
         setSubmitWarning('Application saved. The school mail server needs SMTP configuration, so a backup email notification was sent to the school address.')
       }
 
+      saveApplicationForAdmin(applicationNumber, studentData, parentData, notes, documents)
       setApplicationId(applicationNumber)
       setSubmitted(true)
     } catch (error) {
@@ -203,6 +242,7 @@ const AdmissionsPage = () => {
 
       try {
         await sendAdmissionFallbackEmail(fallbackApplicationNumber, studentData, parentData, notes, documents)
+        saveApplicationForAdmin(fallbackApplicationNumber, studentData, parentData, notes, documents)
         setApplicationId(fallbackApplicationNumber)
         setSubmitWarning('The live admissions API was unavailable, so the application was sent directly to the school email using the backup channel.')
         setSubmitted(true)

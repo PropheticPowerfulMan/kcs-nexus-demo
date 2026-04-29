@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -107,6 +107,100 @@ const adminRosterSeed = [
   })),
 ]
 
+type AdminStudentRecord = (typeof adminRosterSeed)[number]
+
+type AdminAdmissionRequest = {
+  id: string
+  applicationNumber: string
+  studentName: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  nationality: string
+  gradeApplying: string
+  previousSchool: string
+  languages: string
+  parentName: string
+  parentEmail: string
+  parentPhone: string
+  relationship: string
+  address: string
+  occupation: string
+  notes: string
+  documents: string[]
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'INTERVIEW_SCHEDULED' | 'ACCEPTED' | 'REJECTED'
+  submittedAt: string
+}
+
+const ADMIN_ADMISSIONS_STORAGE_KEY = 'kcs-admin-admission-submissions'
+const ADMIN_ROSTER_STORAGE_KEY = 'kcs-admin-official-roster'
+
+const admissionSeed: AdminAdmissionRequest[] = admissionsQueue.map((item, index) => ({
+  id: `seed-adm-${index + 1}`,
+  applicationNumber: `KCS-SEED-${index + 1}`,
+  studentName: item.name,
+  firstName: item.name.split(' ')[0] ?? item.name,
+  lastName: item.name.split(' ').slice(1).join(' ') || 'Applicant',
+  dateOfBirth: '2012-01-01',
+  nationality: 'Congolese',
+  gradeApplying: item.grade,
+  previousSchool: 'Previous school pending verification',
+  languages: 'English, French',
+  parentName: `${item.name.split(' ')[0]} Parent`,
+  parentEmail: `${item.name.toLowerCase().replace(/\W+/g, '.')}@family.kcs.test`,
+  parentPhone: `+243 810 300 00${index + 1}`,
+  relationship: 'Guardian',
+  address: 'Kinshasa, DRC',
+  occupation: 'Pending',
+  notes: 'Seed application available for Super Admin workflow preview.',
+  documents: ['Application form', 'Transcript'],
+  status: item.status === 'Accepted' ? 'ACCEPTED' : item.status === 'Under Review' ? 'UNDER_REVIEW' : 'SUBMITTED',
+  submittedAt: new Date(2026, 3, 22 - index).toISOString(),
+}))
+
+const readStoredAdmissions = () => {
+  if (typeof window === 'undefined') return admissionSeed
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(ADMIN_ADMISSIONS_STORAGE_KEY) || '[]') as AdminAdmissionRequest[]
+    const storedIds = new Set(stored.map((item) => item.applicationNumber))
+    return [...stored, ...admissionSeed.filter((item) => !storedIds.has(item.applicationNumber))]
+  } catch {
+    return admissionSeed
+  }
+}
+
+const readStoredRoster = () => {
+  if (typeof window === 'undefined') return adminRosterSeed
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(ADMIN_ROSTER_STORAGE_KEY) || '[]') as AdminStudentRecord[]
+    return stored.length ? stored : adminRosterSeed
+  } catch {
+    return adminRosterSeed
+  }
+}
+
+const saveAdmissions = (items: AdminAdmissionRequest[]) => {
+  if (typeof window !== 'undefined') window.localStorage.setItem(ADMIN_ADMISSIONS_STORAGE_KEY, JSON.stringify(items))
+}
+
+const saveRoster = (items: AdminStudentRecord[]) => {
+  if (typeof window !== 'undefined') window.localStorage.setItem(ADMIN_ROSTER_STORAGE_KEY, JSON.stringify(items))
+}
+
+const createStudentFromAdmission = (application: AdminAdmissionRequest): AdminStudentRecord => ({
+  id: `adm-approved-${application.applicationNumber}`,
+  name: application.studentName,
+  grade: application.gradeApplying,
+  section: 'A',
+  parent: application.parentName,
+  parentEmail: application.parentEmail,
+  parentPhone: application.parentPhone,
+  status: 'Active',
+  gpa: 0,
+  attendance: 100,
+  discipline: 'Clear',
+})
+
 const staffSeed = [
   { id: 'staff-001', name: 'Dr. Mukendi', role: 'Science Teacher', department: 'High School', status: 'Present', time: '7:12 AM' },
   { id: 'staff-002', name: 'Mrs. Diallo', role: 'English Teacher', department: 'High School', status: 'Present', time: '7:18 AM' },
@@ -129,14 +223,77 @@ const pillTone = (value: string) => {
 const adminButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800'
 const adminOutlineButton = 'rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-kcs-blue-700 transition-colors hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800'
 
-const AdminSectionView = ({ segment }: { segment: string }) => {
-  const [selectedStudent, setSelectedStudent] = useState(adminRosterSeed[0])
+const AdminSectionView = ({
+  segment,
+  officialRoster,
+  setOfficialRoster,
+  admissionRequests,
+  setAdmissionRequests,
+}: {
+  segment: string
+  officialRoster: AdminStudentRecord[]
+  setOfficialRoster: Dispatch<SetStateAction<AdminStudentRecord[]>>
+  admissionRequests: AdminAdmissionRequest[]
+  setAdmissionRequests: Dispatch<SetStateAction<AdminAdmissionRequest[]>>
+}) => {
+  const [selectedStudent, setSelectedStudent] = useState(officialRoster[0] ?? adminRosterSeed[0])
   const [selectedStaff, setSelectedStaff] = useState(staffSeed[0])
   const [sentNotice, setSentNotice] = useState('')
+  const [newStudent, setNewStudent] = useState({
+    name: '',
+    grade: 'Grade 9',
+    section: 'A',
+    parent: '',
+    parentEmail: '',
+    parentPhone: '',
+  })
+
+  const registerOfficialStudent = () => {
+    if (!newStudent.name.trim() || !newStudent.parent.trim()) return
+    const record: AdminStudentRecord = {
+      id: `manual-${Date.now()}`,
+      name: newStudent.name.trim(),
+      grade: newStudent.grade,
+      section: newStudent.section,
+      parent: newStudent.parent.trim(),
+      parentEmail: newStudent.parentEmail.trim() || `${newStudent.parent.toLowerCase().replace(/\W+/g, '.')}@family.kcs.test`,
+      parentPhone: newStudent.parentPhone.trim() || '+243 810 000 000',
+      status: 'Active',
+      gpa: 0,
+      attendance: 100,
+      discipline: 'Clear',
+    }
+    setOfficialRoster((items) => {
+      const next = [record, ...items]
+      saveRoster(next)
+      return next
+    })
+    setSelectedStudent(record)
+    setNewStudent({ name: '', grade: 'Grade 9', section: 'A', parent: '', parentEmail: '', parentPhone: '' })
+  }
+
+  const updateAdmissionStatus = (application: AdminAdmissionRequest, status: AdminAdmissionRequest['status']) => {
+    setAdmissionRequests((items) => {
+      const next = items.map((item) => item.applicationNumber === application.applicationNumber ? { ...item, status } : item)
+      saveAdmissions(next)
+      return next
+    })
+
+    if (status === 'ACCEPTED') {
+      const approvedStudent = createStudentFromAdmission({ ...application, status })
+      setOfficialRoster((items) => {
+        if (items.some((item) => item.id === approvedStudent.id || item.name === approvedStudent.name)) return items
+        const next = [approvedStudent, ...items]
+        saveRoster(next)
+        return next
+      })
+      setSelectedStudent(approvedStudent)
+    }
+  }
 
   const grade9to12 = useMemo(
-    () => adminRosterSeed.filter((student) => ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(student.grade)),
-    []
+    () => officialRoster.filter((student) => ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(student.grade)),
+    [officialRoster]
   )
 
   if (segment === 'students') {
@@ -148,7 +305,7 @@ const AdminSectionView = ({ segment }: { segment: string }) => {
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">Detailed Student Directory</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Official roster, parent contacts, attendance, GPA, and discipline status.</p>
             </div>
-            <button className={adminButton}><UserPlus size={16} className="inline" /> Register student</button>
+            <button className={adminButton} onClick={registerOfficialStudent}><UserPlus size={16} className="inline" /> Register student</button>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-[860px] w-full text-sm">
@@ -163,7 +320,7 @@ const AdminSectionView = ({ segment }: { segment: string }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/50">
-                {adminRosterSeed.map((student) => (
+                {officialRoster.map((student) => (
                   <tr key={student.id}>
                     <td className="py-3 font-semibold text-kcs-blue-900 dark:text-white">{student.name}</td>
                     <td className="py-3 text-gray-500 dark:text-gray-400">{student.grade} {student.section}</td>
@@ -199,6 +356,25 @@ const AdminSectionView = ({ segment }: { segment: string }) => {
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <button className={adminButton}>Save record</button>
             <button className={adminOutlineButton}>Contact parent</button>
+          </div>
+          <div className="mt-6 rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
+            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Register Student + Parent</h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">This official registry feeds teacher, parent, student, finance, attendance, and report-card modules.</p>
+            <div className="mt-4 grid gap-3">
+              <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {['K3', 'K4', 'K5', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((grade) => <option key={grade}>{grade}</option>)}
+                </select>
+                <select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {['A', 'B', 'C', 'D'].map((section) => <option key={section}>{section}</option>)}
+                </select>
+              </div>
+              <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" />
+              <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
+              <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
+              <button className={adminButton} onClick={registerOfficialStudent}>Create official record</button>
+            </div>
           </div>
         </div>
       </div>
@@ -342,7 +518,7 @@ const AdminSectionView = ({ segment }: { segment: string }) => {
           <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Detailed Report Builder</h2>
           <div className="grid gap-3">
             <select className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
-              {adminRosterSeed.map((student) => <option key={student.id}>{student.name}</option>)}
+              {officialRoster.map((student) => <option key={student.id}>{student.name}</option>)}
             </select>
             <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Incident category" />
             <textarea className="min-h-28 rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Incident details, context, action taken, follow-up..." />
@@ -402,17 +578,43 @@ const AdminSectionView = ({ segment }: { segment: string }) => {
 
   if (segment === 'admissions') {
     return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {admissionsQueue.map((item) => (
-          <div key={item.name} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.name}</p>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(item.status)}`}>{item.status}</span>
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Online Admissions Approval Desk</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Every online submission lands here for Super Admin approval, rejection, or conversion into the official registry.</p>
             </div>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{item.grade} - updated {item.date}</p>
-            <div className="mt-4 flex flex-col gap-2"><button className={adminButton}>Review file</button><button className={adminOutlineButton}>Schedule interview</button></div>
+            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              {admissionRequests.filter((item) => item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW').length} pending decisions
+            </span>
           </div>
-        ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {admissionRequests.map((item) => (
+            <div key={item.applicationNumber} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.studentName}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{item.gradeApplying} - {item.applicationNumber}</p>
+                </div>
+                <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(item.status)}`}>{item.status.replace('_', ' ')}</span>
+              </div>
+              <div className="mt-4 space-y-2 rounded-xl bg-gray-50 p-4 text-sm dark:bg-kcs-blue-800/30">
+                <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.parentName}</p>
+                <p className="text-gray-500 dark:text-gray-400">{item.parentEmail} - {item.parentPhone}</p>
+                <p className="text-gray-500 dark:text-gray-400">Previous school: {item.previousSchool}</p>
+                <p className="text-gray-500 dark:text-gray-400">Docs: {item.documents?.length ? item.documents.join(', ') : 'Pending document review'}</p>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button className={adminOutlineButton} onClick={() => updateAdmissionStatus(item, 'UNDER_REVIEW')}>Review</button>
+                <button className={adminOutlineButton} onClick={() => updateAdmissionStatus(item, 'INTERVIEW_SCHEDULED')}>Interview</button>
+                <button className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700" onClick={() => updateAdmissionStatus(item, 'ACCEPTED')}>Approve + create student</button>
+                <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700" onClick={() => updateAdmissionStatus(item, 'REJECTED')}>Refuse</button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -548,6 +750,9 @@ const AdminDashboard = () => {
   const { user } = useAuthStore()
   const location = useLocation()
   const activeSegment = getAdminSegment(location.pathname)
+  const [officialRoster, setOfficialRoster] = useState<AdminStudentRecord[]>(readStoredRoster)
+  const [admissionRequests, setAdmissionRequests] = useState<AdminAdmissionRequest[]>(readStoredAdmissions)
+  const pendingAdmissions = admissionRequests.filter((item) => item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW')
 
   return (
     <div className="portal-shell flex">
@@ -572,16 +777,22 @@ const AdminDashboard = () => {
 
         <div className="space-y-6 p-4 sm:p-6">
           {activeSegment !== 'dashboard' ? (
-            <AdminSectionView segment={activeSegment} />
+            <AdminSectionView
+              segment={activeSegment}
+              officialRoster={officialRoster}
+              setOfficialRoster={setOfficialRoster}
+              admissionRequests={admissionRequests}
+              setAdmissionRequests={setAdmissionRequests}
+            />
           ) : (
             <>
           <PortalSectionPanel />
 
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
             {[
-              { label: 'Total Students', value: '511', icon: GraduationCap, tone: 'bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300', sub: '+8 this month' },
+              { label: 'Official Registry', value: String(officialRoster.length), icon: GraduationCap, tone: 'bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300', sub: 'students controlled by Super Admin' },
               { label: 'Faculty Members', value: '64', icon: Users, tone: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300', sub: '92% retention' },
-              { label: 'Open Applications', value: '102', icon: FileText, tone: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', sub: '31 priority cases' },
+              { label: 'Open Applications', value: String(pendingAdmissions.length), icon: FileText, tone: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', sub: 'approval or refusal required' },
               { label: 'AI Risk Alerts', value: '10', icon: Brain, tone: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', sub: '3 high severity' },
               { label: 'Live Events', value: '4', icon: Radio, tone: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', sub: '1 currently live' },
             ].map((item) => {
@@ -677,20 +888,43 @@ const AdminDashboard = () => {
                 <span className="badge-gold text-xs">Priority review</span>
               </div>
               <div className="space-y-3">
-                {admissionsQueue.map((item) => (
-                  <div key={item.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/20">
+                {admissionRequests.slice(0, 5).map((item) => (
+                  <div key={item.applicationNumber} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/20">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.grade}</p>
+                        <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.studentName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.gradeApplying} - {item.parentName}</p>
                       </div>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.status === 'Accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : item.status === 'Documents Missing' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : item.status === 'Interview Scheduled' ? 'bg-kcs-blue-100 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>
-                        {item.status}
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(item.status)}`}>
+                        {item.status.replace('_', ' ')}
                       </span>
                     </div>
                     <div className="mt-2 flex items-center gap-1 text-xs text-gray-400">
-                      <Clock3 size={12} /> Updated {item.date}
+                      <Clock3 size={12} /> Submitted {new Date(item.submittedAt).toLocaleDateString()}
                     </div>
+                    {(item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW') && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white" onClick={() => {
+                          const approvedStudent = createStudentFromAdmission({ ...item, status: 'ACCEPTED' })
+                          setAdmissionRequests((items) => {
+                            const next = items.map((application) => application.applicationNumber === item.applicationNumber ? { ...application, status: 'ACCEPTED' as const } : application)
+                            saveAdmissions(next)
+                            return next
+                          })
+                          setOfficialRoster((records) => {
+                            if (records.some((record) => record.id === approvedStudent.id || record.name === approvedStudent.name)) return records
+                            const next = [approvedStudent, ...records]
+                            saveRoster(next)
+                            return next
+                          })
+                        }}>Approve</button>
+                        <button className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white" onClick={() => setAdmissionRequests((items) => {
+                          const next = items.map((application) => application.applicationNumber === item.applicationNumber ? { ...application, status: 'REJECTED' as const } : application)
+                          saveAdmissions(next)
+                          return next
+                        })}>Refuse</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -900,13 +1134,13 @@ const AdminDashboard = () => {
             <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Student Risk Control</h2>
               <div className="space-y-3">
-                {students.map((student) => (
+                {officialRoster.slice(0, 6).map((student) => (
                   <div key={student.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${student.risk === 'low' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{student.risk}</span>
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${pillTone(student.discipline)}`}>{student.discipline}</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{student.aiInsight}</p>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{student.grade} {student.section} - GPA {student.gpa} - attendance {student.attendance}% - parent: {student.parent}</p>
                   </div>
                 ))}
               </div>
