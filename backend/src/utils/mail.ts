@@ -11,6 +11,10 @@ type MailPayload = {
   attachments?: Attachment[]
 }
 
+export type MailResult =
+  | { sent: true }
+  | { sent: false; reason: 'SMTP_NOT_CONFIGURED' | 'SMTP_SEND_FAILED' }
+
 const hasSmtpConfig = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)
 
 const transporter = hasSmtpConfig
@@ -25,7 +29,7 @@ const transporter = hasSmtpConfig
     })
   : null
 
-export const sendSchoolMail = async ({ to = env.SCHOOL_EMAIL, replyTo, subject, text, html, attachments }: MailPayload) => {
+export const sendSchoolMail = async ({ to = env.SCHOOL_EMAIL, replyTo, subject, text, html, attachments }: MailPayload): Promise<MailResult> => {
   if (!transporter) {
     console.warn(`[mail] SMTP is not configured. Email "${subject}" was not sent to ${to}.`)
     return { sent: false, reason: 'SMTP_NOT_CONFIGURED' as const }

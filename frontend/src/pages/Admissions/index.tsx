@@ -86,6 +86,48 @@ const parentSchema = z.object({
 type StudentData = z.infer<typeof studentSchema>
 type ParentData  = z.infer<typeof parentSchema>
 
+const SCHOOL_ADMISSIONS_EMAIL = 'kinshasachristianschool@gmail.com'
+
+const sendAdmissionFallbackEmail = async (
+  applicationNumber: string,
+  studentData: StudentData,
+  parentData: ParentData,
+  notes: string,
+  documents: Record<string, File | null>,
+) => {
+  const fallbackData = new FormData()
+  fallbackData.append('_subject', `New KCS online admission - ${applicationNumber} - ${studentData.firstName} ${studentData.lastName}`)
+  fallbackData.append('_template', 'table')
+  fallbackData.append('_captcha', 'false')
+  fallbackData.append('Application number', applicationNumber)
+  fallbackData.append('Student first name', studentData.firstName)
+  fallbackData.append('Student last name', studentData.lastName)
+  fallbackData.append('Date of birth', studentData.dateOfBirth)
+  fallbackData.append('Nationality', studentData.nationality)
+  fallbackData.append('Grade applying', studentData.applyingGrade)
+  fallbackData.append('Previous/current school', studentData.currentSchool)
+  fallbackData.append('Languages spoken', studentData.languages ?? 'Not provided')
+  fallbackData.append('Parent/guardian name', parentData.parentName)
+  fallbackData.append('Relationship', parentData.relationship)
+  fallbackData.append('Parent email', parentData.email)
+  fallbackData.append('Parent phone', parentData.phone)
+  fallbackData.append('Address', parentData.address)
+  fallbackData.append('Occupation', parentData.occupation ?? 'Not provided')
+  fallbackData.append('Notes', notes || 'Not provided')
+  Object.entries(documents).forEach(([key, file]) => {
+    if (file) fallbackData.append(`Document - ${key}`, file)
+  })
+
+  const response = await fetch(`https://formsubmit.co/ajax/${SCHOOL_ADMISSIONS_EMAIL}`, {
+    method: 'POST',
+    body: fallbackData,
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) throw new Error('Fallback email service failed')
+  return response.json()
+}
+
 /* ────────────── Component ────────────── */
 const AdmissionsPage = () => {
   const [activeStep, setActiveStep] = useState<Step>('Student')
@@ -96,6 +138,7 @@ const AdmissionsPage = () => {
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [submitWarning, setSubmitWarning] = useState('')
   const [applicationId, setApplicationId] = useState('')
 
   const stepIdx = STEPS.indexOf(activeStep)
@@ -120,6 +163,7 @@ const AdmissionsPage = () => {
 
     setSubmitting(true)
     setSubmitError('')
+    setSubmitWarning('')
 
     try {
       const formData = new FormData()
@@ -144,11 +188,28 @@ const AdmissionsPage = () => {
       })
 
       const response = await admissionsAPI.create(formData)
-      const applicationNumber = response.data?.data?.applicationNumber
-      setApplicationId(applicationNumber || `KCS-${Date.now().toString().slice(-6)}`)
+      const applicationNumber = response.data?.data?.applicationNumber || `KCS-${Date.now().toString().slice(-6)}`
+      const emailSent = response.data?.data?.emailDelivery?.sent
+
+      if (!emailSent) {
+        await sendAdmissionFallbackEmail(applicationNumber, studentData, parentData, notes, documents)
+        setSubmitWarning('Application saved. The school mail server needs SMTP configuration, so a backup email notification was sent to the school address.')
+      }
+
+      setApplicationId(applicationNumber)
       setSubmitted(true)
-    } catch {
-      setSubmitError('We could not submit the application. Please check the information and try again.')
+    } catch (error) {
+      const fallbackApplicationNumber = `KCS-${Date.now().toString().slice(-6)}`
+
+      try {
+        await sendAdmissionFallbackEmail(fallbackApplicationNumber, studentData, parentData, notes, documents)
+        setApplicationId(fallbackApplicationNumber)
+        setSubmitWarning('The live admissions API was unavailable, so the application was sent directly to the school email using the backup channel.')
+        setSubmitted(true)
+      } catch {
+        console.error('Admission submission failed:', error)
+        setSubmitError(`We could not send the application automatically. Please email the school directly at ${SCHOOL_ADMISSIONS_EMAIL} or try again in a few minutes.`)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -296,6 +357,11 @@ const AdmissionsPage = () => {
                   <p className="text-2xl font-bold text-kcs-blue-700 dark:text-kcs-blue-300 tracking-wider">{applicationId}</p>
                 </div>
                 <p className="text-xs text-gray-400 mt-4">Save this ID to track your application status.</p>
+                {submitWarning && (
+                  <p className="mx-auto mt-4 max-w-xl rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
+                    {submitWarning}
+                  </p>
+                )}
               </motion.div>
             ) : (
               <div className="bg-white dark:bg-kcs-blue-900/50 rounded-2xl border border-gray-100 dark:border-kcs-blue-800 shadow-kcs overflow-hidden">

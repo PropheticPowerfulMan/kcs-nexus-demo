@@ -211,20 +211,36 @@ admissionsRouter.post('/', upload.array('documents', 6), asyncHandler(async (req
   })
 
   const email = buildAdmissionEmail(applicationNumber, payload, documents)
-  const mailResult = await sendSchoolMail({
-    to: env.SCHOOL_EMAIL,
-    replyTo: payload.parentEmail,
-    subject: `New KCS admission application - ${applicationNumber} - ${payload.firstName} ${payload.lastName}`,
-    text: email.text,
-    html: email.html,
-    attachments: documents.map((file) => ({
-      filename: file.originalname,
-      content: file.buffer,
-      contentType: file.mimetype,
-    })),
-  })
+  let mailResult: Awaited<ReturnType<typeof sendSchoolMail>>
 
-  return success(res, application, 'Application submitted', 201)
+  try {
+    mailResult = await sendSchoolMail({
+      to: env.SCHOOL_EMAIL,
+      replyTo: payload.parentEmail,
+      subject: `New KCS admission application - ${applicationNumber} - ${payload.firstName} ${payload.lastName}`,
+      text: email.text,
+      html: email.html,
+      attachments: documents.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer,
+        contentType: file.mimetype,
+      })),
+    })
+  } catch (error) {
+    console.error('[admissions] Application saved, but admission email failed:', error)
+    mailResult = { sent: false, reason: 'SMTP_SEND_FAILED' as const }
+  }
+
+  return success(
+    res,
+    {
+      ...application,
+      emailDelivery: mailResult,
+      schoolEmail: env.SCHOOL_EMAIL,
+    },
+    mailResult.sent ? 'Application submitted and emailed' : 'Application submitted; email delivery needs attention',
+    201,
+  )
 }))
 
 admissionsRouter.patch('/:id/status', authenticate, requireRoles('admin'), asyncHandler(async (req, res) => {
