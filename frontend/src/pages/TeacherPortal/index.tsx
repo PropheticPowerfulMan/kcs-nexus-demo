@@ -70,6 +70,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     attendance: { title: 'Attendance', subtitle: 'Daily attendance records, class trends, and follow-up signals.', icon: ClipboardCheck },
     assignments: { title: 'Assignments', subtitle: 'Homework status, priorities, missing work, and LMS resources.', icon: FileText },
     grades: { title: 'Grade Book', subtitle: 'Recent scores, grading categories, scale, and release status.', icon: TrendingUp },
+    'report-card': { title: 'Report Card Builder', subtitle: 'Build student bulletins by course, enter points, and calculate averages automatically.', icon: GraduationCap },
     reports: { title: 'Reports', subtitle: 'Report cards, AI comments, exports, and principal approval status.', icon: GraduationCap },
     discipline: { title: 'Detailed Student Discipline Report', subtitle: 'Incident context, action taken, parent contact, and follow-up plan.', icon: AlertTriangle },
     messages: { title: 'Messages', subtitle: 'Teacher inbox, parent threads, and internal coordination messages.', icon: MessageSquare },
@@ -127,6 +128,28 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const [gradeEntries, setGradeEntries] = useState(() => ecosystemGrades)
   const [reportList, setReportList] = useState(() => reportCards)
   const [disciplineList, setDisciplineList] = useState(() => disciplineReports)
+  const [reportCardStudentId, setReportCardStudentId] = useState(superAdminStudentPool[0].id)
+  const [reportCardTerm, setReportCardTerm] = useState('Term 3')
+  const [reportCardRows, setReportCardRows] = useState(() =>
+    subjects.slice(0, 4).map((subject, index) => ({
+      id: subject.id,
+      course: subject.name,
+      teacher: subject.teacher,
+      coefficient: index === 1 ? 2 : 1,
+      points: index === 0 ? 89 : index === 1 ? 95 : index === 2 ? 91 : 76,
+      maxPoints: 100,
+      comment: index === 1 ? 'Excellent lab reasoning' : index === 3 ? 'Needs steady homework rhythm' : 'Good progress',
+    })),
+  )
+  const [generatedReportCards, setGeneratedReportCards] = useState<Array<{
+    id: string
+    student: string
+    term: string
+    average: number
+    mention: string
+    rows: typeof reportCardRows
+    summary: string
+  }>>([])
   const [inbox, setInbox] = useState(() => [
     ...messages.map((message) => ({ ...message, body: message.subject, requiresResponse: message.id === 3 })),
     ...ecosystemMessages.filter((message) => message.toRole === 'teacher').map((message, index) => ({
@@ -191,6 +214,59 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const findStudent = (studentId: string) => superAdminStudentPool.find((student) => student.id === studentId)
   const runAction = (message: string) => setActionMessage(message)
+  const reportCardStudent = findStudent(reportCardStudentId)
+  const reportCardAverage = useMemo(() => {
+    const totalWeightedPoints = reportCardRows.reduce((sum, row) => sum + (row.points / Math.max(row.maxPoints, 1)) * 100 * row.coefficient, 0)
+    const totalCoefficient = reportCardRows.reduce((sum, row) => sum + row.coefficient, 0)
+    return totalCoefficient ? Number((totalWeightedPoints / totalCoefficient).toFixed(2)) : 0
+  }, [reportCardRows])
+  const reportCardMention = reportCardAverage >= 90 ? 'Excellent' : reportCardAverage >= 80 ? 'Very Good' : reportCardAverage >= 70 ? 'Satisfactory' : reportCardAverage >= 60 ? 'Needs Support' : 'Intervention Required'
+  const reportCardDecision = reportCardAverage >= 70 ? 'Promote academic momentum' : 'Create support plan before final approval'
+
+  const updateReportCardRow = (rowId: string, field: 'course' | 'points' | 'maxPoints' | 'coefficient' | 'comment', value: string | number) => {
+    setReportCardRows((current) => current.map((row) => row.id === rowId ? { ...row, [field]: value } : row))
+  }
+
+  const addReportCardCourse = () => {
+    setReportCardRows((current) => [
+      ...current,
+      {
+        id: `rc-${Date.now()}`,
+        course: 'New Course',
+        teacher: 'Dr. Mukendi',
+        coefficient: 1,
+        points: 0,
+        maxPoints: 100,
+        comment: 'Teacher comment pending',
+      },
+    ])
+    runAction('New report-card course row added.')
+  }
+
+  const generateReportCard = () => {
+    const studentName = reportCardStudent?.name ?? 'Selected student'
+    const summary = `${studentName} earned ${reportCardAverage}% for ${reportCardTerm}. Mention: ${reportCardMention}. Decision: ${reportCardDecision}.`
+    const nextReport = {
+      id: `rc-final-${Date.now()}`,
+      student: studentName,
+      term: reportCardTerm,
+      average: reportCardAverage,
+      mention: reportCardMention,
+      rows: reportCardRows,
+      summary,
+    }
+    setGeneratedReportCards((current) => [nextReport, ...current])
+    setReportList((current) => [{
+      student: studentName,
+      term: reportCardTerm,
+      average: reportCardAverage,
+      conduct: reportCardMention,
+      teacherComment: summary,
+      principalStatus: 'Pending review',
+      download: 'Report card draft',
+    }, ...current])
+    runAction(`${studentName}'s report card was generated with an automatic ${reportCardAverage}% average.`)
+  }
 
   const createCourse = () => {
     const nextCourse = {
@@ -504,6 +580,131 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {segment === 'report-card' && (
+        <div className="space-y-6">
+          <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+            <div className={panelClass}>
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Bulletin setup</h3>
+              <div className="mt-4 grid gap-3">
+                <select className={inputClass} value={reportCardStudentId} onChange={(event) => setReportCardStudentId(event.target.value)}>
+                  {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section}</option>)}
+                </select>
+                <input className={inputClass} value={reportCardTerm} onChange={(event) => setReportCardTerm(event.target.value)} />
+                <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-4 text-center dark:bg-kcs-blue-800/30">
+                  <div>
+                    <p className="font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">{reportCardAverage}%</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Average</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-lg font-bold text-kcs-blue-900 dark:text-white">{reportCardMention}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Mention</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-lg font-bold text-kcs-blue-900 dark:text-white">{reportCardRows.length}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Courses</p>
+                  </div>
+                </div>
+                <button onClick={generateReportCard} className={compactButton}>Generate report card</button>
+                <button onClick={addReportCardCourse} className="rounded-xl border border-kcs-blue-200 px-4 py-2 text-sm font-semibold text-kcs-blue-700 hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-900/40">Add course row</button>
+              </div>
+            </div>
+
+            <div className={panelClass}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="font-bold text-kcs-blue-900 dark:text-white">{reportCardStudent?.name} report card</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{reportCardTerm} - weighted automatic calculation</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(reportCardAverage >= 70 ? 'low' : 'high')}`}>{reportCardDecision}</span>
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs uppercase text-gray-400 dark:border-kcs-blue-800">
+                      <th className="pb-3 pr-3">Course</th>
+                      <th className="pb-3 pr-3">Points</th>
+                      <th className="pb-3 pr-3">Max</th>
+                      <th className="pb-3 pr-3">Coef.</th>
+                      <th className="pb-3 pr-3">Average</th>
+                      <th className="pb-3">Comment</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
+                    {reportCardRows.map((row) => {
+                      const courseAverage = Number(((row.points / Math.max(row.maxPoints, 1)) * 100).toFixed(1))
+                      return (
+                        <tr key={row.id}>
+                          <td className="py-3 pr-3">
+                            <input className={inputClass} value={row.course} onChange={(event) => updateReportCardRow(row.id, 'course', event.target.value)} />
+                          </td>
+                          <td className="py-3 pr-3">
+                            <input className={inputClass} type="number" min={0} value={row.points} onChange={(event) => updateReportCardRow(row.id, 'points', Number(event.target.value))} />
+                          </td>
+                          <td className="py-3 pr-3">
+                            <input className={inputClass} type="number" min={1} value={row.maxPoints} onChange={(event) => updateReportCardRow(row.id, 'maxPoints', Number(event.target.value))} />
+                          </td>
+                          <td className="py-3 pr-3">
+                            <input className={inputClass} type="number" min={1} value={row.coefficient} onChange={(event) => updateReportCardRow(row.id, 'coefficient', Number(event.target.value))} />
+                          </td>
+                          <td className="py-3 pr-3">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(courseAverage >= 70 ? 'low' : 'high')}`}>{courseAverage}%</span>
+                          </td>
+                          <td className="py-3">
+                            <input className={inputClass} value={row.comment} onChange={(event) => updateReportCardRow(row.id, 'comment', event.target.value)} />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className={panelClass}>
+              <p className="text-xs font-semibold uppercase text-gray-400">Teacher narrative</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                {reportCardStudent?.name} is currently at {reportCardAverage}% with a {reportCardMention.toLowerCase()} standing. The next step is to keep the strongest courses visible while targeting the lowest course for intervention.
+              </p>
+            </div>
+            <div className={panelClass}>
+              <p className="text-xs font-semibold uppercase text-gray-400">Parent-ready summary</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                Overall average: {reportCardAverage}%. Mention: {reportCardMention}. Decision: {reportCardDecision}.
+              </p>
+            </div>
+            <div className={panelClass}>
+              <p className="text-xs font-semibold uppercase text-gray-400">Approval flow</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                Teacher draft to academic coordinator review to Super Admin approval to parent/student publication.
+              </p>
+            </div>
+          </div>
+
+          {generatedReportCards.length > 0 && (
+            <div className={panelClass}>
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Generated report cards</h3>
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                {generatedReportCards.map((card) => (
+                  <div key={card.id} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-kcs-blue-900 dark:text-white">{card.student}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{card.term} - {card.rows.length} courses</p>
+                      </div>
+                      <span className="badge-blue text-xs">{card.average}%</span>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{card.summary}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

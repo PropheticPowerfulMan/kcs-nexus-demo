@@ -167,7 +167,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['courses', 'students', 'attendance', 'assignments', 'grades', 'reports', 'discipline', 'messages'].map((segment) => (
+        {['courses', 'students', 'attendance', 'assignments', 'grades', 'report-card', 'reports', 'discipline', 'messages'].map((segment) => (
           <Route
             key={segment}
             path={`/portal/teacher/${segment}`}
