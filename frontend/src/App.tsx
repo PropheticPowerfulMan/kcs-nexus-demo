@@ -22,6 +22,7 @@ import ForumInsightsPage from '@/pages/Admin/ForumInsights'
 import StudentForumInsightsPage from '@/pages/Admin/StudentForumInsights'
 import NotFoundPage from '@/pages/NotFound'
 import { useAuthStore } from '@/store/authStore'
+import GlobalTextTranslator from '@/components/shared/GlobalTextTranslator'
 
 const PortalRedirect = () => {
   const { user, isAuthenticated } = useAuthStore()
@@ -35,9 +36,11 @@ const PortalRedirect = () => {
 
 const App = () => {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
+    <>
+      <GlobalTextTranslator />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/academics" element={<AcademicsPage />} />
         <Route path="/news" element={<NewsPage />} />
@@ -250,9 +253,10 @@ const App = () => {
           />
         ))}
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </>
   )
 }
 

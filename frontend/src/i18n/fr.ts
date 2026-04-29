@@ -1,5 +1,4 @@
 const fr = {
-  // Navigation
   nav: {
     home: 'Accueil',
     about: 'À propos',
@@ -16,12 +15,12 @@ const fr = {
     visitSchool: "Visiter l'école",
   },
 
-  // Hero
   hero: {
     badge: 'École internationale américaine',
     title: "L'excellence dans l'éducation,",
     titleHighlight: 'enracinée dans la foi',
-    subtitle: "Former la prochaine génération de leaders africains grâce à une éducation américaine de classe mondiale, à des valeurs chrétiennes et à une technologie innovante.",
+    subtitle:
+      "Former la prochaine génération de leaders africains grâce à une éducation américaine de classe mondiale, à des valeurs chrétiennes et à une technologie innovante.",
     cta1: 'Postuler maintenant',
     cta2: 'Découvrir les programmes',
     stats: {
@@ -32,7 +31,6 @@ const fr = {
     },
   },
 
-  // About
   about: {
     title: 'À propos de KCS',
     subtitle: "Un héritage d'excellence depuis 1967",
@@ -46,16 +44,15 @@ const fr = {
     },
     values: {
       title: 'Valeurs fondamentales',
-      faith: { title: 'Foi', desc: 'Ancrés dans les principes et les valeurs chrétiens' },
+      faith: { title: 'Foi', desc: 'Ancrés dans les principes et les valeurs chrétiennes' },
       excellence: { title: 'Excellence', desc: 'Viser les plus hauts standards académiques' },
-      integrity: { title: 'Intégrité', desc: "Agir avec honnêteté et caractère dans tout ce que nous faisons" },
+      integrity: { title: 'Intégrité', desc: 'Agir avec honnêteté et caractère dans tout ce que nous faisons' },
       community: { title: 'Communauté', desc: 'Construire des relations solides et significatives' },
       innovation: { title: 'Innovation', desc: 'Adopter la technologie et les idées nouvelles' },
       leadership: { title: 'Leadership', desc: "Former des leaders serviteurs pour l'Afrique" },
     },
   },
 
-  // Academics
   academics: {
     title: 'Programmes académiques',
     subtitle: 'Un programme international, un cœur africain',
@@ -73,14 +70,13 @@ const fr = {
       high: {
         title: 'Lycée',
         grades: 'Grades 9-12',
-        desc: "Préparer les élèves aux meilleures universités du monde avec des cours avancés et exigeants.",
+        desc: 'Préparer les élèves aux meilleures universités du monde avec des cours avancés et exigeants.',
       },
     },
     curriculum: 'Programme américain',
-    accreditation: 'Accrédité par l’ACSI',
+    accreditation: "Accrédité par l'ACSI",
   },
 
-  // News
   news: {
     title: 'Actualités et événements',
     subtitle: 'Restez connectés à la communauté KCS',
@@ -95,7 +91,6 @@ const fr = {
     },
   },
 
-  // Admissions
   admissions: {
     title: 'Admissions',
     subtitle: 'Rejoignez la famille KCS',
@@ -111,7 +106,6 @@ const fr = {
     trackApplication: 'Suivre ma candidature',
   },
 
-  // Portal
   portal: {
     student: {
       title: 'Portail élève',
@@ -130,7 +124,7 @@ const fr = {
       notifications: 'Notifications',
     },
     admin: {
-      title: 'Panneau d’administration',
+      title: "Panneau d'administration",
       students: 'Élèves',
       teachers: 'Enseignants',
       courses: 'Cours',
@@ -140,14 +134,14 @@ const fr = {
     },
   },
 
-  // AI
   ai: {
     chat: {
       title: 'Assistant KCS',
       subtitle: 'Posez-moi vos questions sur KCS',
       placeholder: 'Posez une question...',
       thinking: 'Réflexion en cours...',
-      greeting: "Bonjour ! Je suis l'assistant IA de KCS. Comment puis-je vous aider aujourd'hui ? Je peux répondre aux questions sur les admissions, les programmes, les horaires et bien plus encore.",
+      greeting:
+        "Bonjour ! Je suis l'assistant IA de KCS. Comment puis-je vous aider aujourd'hui ? Je peux répondre aux questions sur les admissions, les programmes, les horaires et bien plus encore.",
     },
     tutor: {
       title: 'Tuteur IA',
@@ -157,7 +151,6 @@ const fr = {
     },
   },
 
-  // Contact
   contact: {
     title: 'Contactez-nous',
     subtitle: 'Nous serions ravis de vous lire',
@@ -175,7 +168,6 @@ const fr = {
     },
   },
 
-  // Auth
   auth: {
     signIn: 'Se connecter',
     signUp: "S'inscrire",
@@ -189,7 +181,6 @@ const fr = {
     hasAccount: 'Vous avez déjà un compte ?',
   },
 
-  // Common
   common: {
     loading: 'Chargement...',
     error: 'Une erreur est survenue',

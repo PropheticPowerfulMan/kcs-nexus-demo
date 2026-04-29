@@ -1,9 +1,17 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
-import { 
-  ArrowRight, Heart, Award, Shield, Zap, TrendingUp, Globe,
-  GraduationCap, Users, BookOpen, Lightbulb, MapPin
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  Globe,
+  GraduationCap,
+  Heart,
+  Lightbulb,
+  MapPin,
+  Shield,
+  Users,
 } from 'lucide-react'
 
 const fadeUp = {
@@ -19,6 +27,7 @@ const stagger = {
 const AnimSection = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+
   return (
     <motion.div ref={ref} initial="hidden" animate={inView ? 'visible' : 'hidden'} variants={stagger} className={className}>
       {children}
@@ -58,12 +67,12 @@ const leadership = [
 ]
 
 const faculty = [
-  { name: 'Mr. Thomas Belanger', dept: 'Mathematics & Sciences', exp: '18 years', flag: '🇺🇸' },
-  { name: 'Mrs. Fatima Diallo', dept: 'English Language Arts', exp: '14 years', flag: '🇸🇳' },
-  { name: 'Dr. Pierre Lukusa', dept: 'History & Social Studies', exp: '20 years', flag: '🇨🇩' },
-  { name: 'Ms. Sarah Johnson', dept: 'Arts & Music', exp: '12 years', flag: '🇬🇧' },
-  { name: 'Mr. Carlos Rivera', dept: 'Physical Education', exp: '10 years', flag: '🇲🇽' },
-  { name: 'Mrs. Josephine Nkosi', dept: 'French & Languages', exp: '16 years', flag: '🇿🇦' },
+  { name: 'Mr. Thomas Belanger', dept: 'Mathematics & Sciences', exp: '18 years', flag: 'US' },
+  { name: 'Mrs. Fatima Diallo', dept: 'English Language Arts', exp: '14 years', flag: 'SN' },
+  { name: 'Dr. Pierre Lukusa', dept: 'History & Social Studies', exp: '20 years', flag: 'CD' },
+  { name: 'Ms. Sarah Johnson', dept: 'Arts & Music', exp: '12 years', flag: 'GB' },
+  { name: 'Mr. Carlos Rivera', dept: 'Physical Education', exp: '10 years', flag: 'MX' },
+  { name: 'Mrs. Josephine Nkosi', dept: 'French & Languages', exp: '16 years', flag: 'ZA' },
 ]
 
 const milestones = [
@@ -75,61 +84,83 @@ const milestones = [
   { year: 'Future', event: 'KCS Nexus', desc: 'Digital tools connect families, students, teachers, and school information.' },
 ]
 
+const storyStats = [
+  { icon: Users, label: 'KCS Students', sub: 'Academic, social, spiritual growth' },
+  { icon: GraduationCap, label: 'Life-long Learners', sub: 'Passionate and independent' },
+  { icon: Globe, label: 'Biblical Worldview', sub: 'Ready to transform society' },
+  { icon: Award, label: 'Excellence', sub: 'High standards in education and care' },
+]
+
+const missionCards = [
+  {
+    icon: Heart,
+    title: 'Our Mission',
+    color: 'text-red-500',
+    bg: 'bg-red-50 dark:bg-red-900/20',
+    border: 'border-red-100 dark:border-red-800/30',
+    text: 'To provide an exceptional American education rooted in Christian values, empowering students in Kinshasa and across the Congo to become servant leaders who transform their communities and the world.',
+  },
+  {
+    icon: Lightbulb,
+    title: 'Our Vision',
+    color: 'text-kcs-gold-600',
+    bg: 'bg-kcs-gold-50 dark:bg-kcs-gold-900/20',
+    border: 'border-kcs-gold-100 dark:border-kcs-gold-800/30',
+    text: 'To be the leading international school in Central Africa, recognized for academic excellence, spiritual depth, and the development of globally-minded leaders who make a lasting impact.',
+  },
+  {
+    icon: MapPin,
+    title: 'Our Promise',
+    color: 'text-kcs-blue-600',
+    bg: 'bg-kcs-blue-50 dark:bg-kcs-blue-900/20',
+    border: 'border-kcs-blue-100 dark:border-kcs-blue-800/30',
+    text: 'Every student who walks through our doors receives a world-class education, personalized care, and the tools to succeed at the highest levels - academically, professionally, and spiritually.',
+  },
+]
+
 const AboutPage = () => {
   return (
     <div className="pt-20">
-      {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="relative py-24 bg-gradient-to-br from-kcs-blue-950 via-kcs-blue-900 to-kcs-blue-800 overflow-hidden">
+      <section className="relative overflow-hidden bg-gradient-to-br from-kcs-blue-950 via-kcs-blue-900 to-kcs-blue-800 py-24">
         <div className="absolute inset-0 dots-bg opacity-10" style={{ backgroundSize: '40px 40px' }} />
         <div className="relative container-custom text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-kcs-gold-500/20 border border-kcs-gold-400/30 text-kcs-gold-300 text-sm font-medium mb-5">
+            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-kcs-gold-400/30 bg-kcs-gold-500/20 px-4 py-2 text-sm font-medium text-kcs-gold-300">
               Kinshasa, DRC - Letting Our Light Shine
             </span>
-            <h1 className="text-5xl md:text-6xl font-bold font-display text-white mb-5">
-              About{' '}
-              <span className="text-gradient-gold">KCS</span>
+            <h1 className="mb-5 text-5xl font-bold font-display text-white md:text-6xl">
+              About <span className="text-gradient-gold">KCS</span>
             </h1>
-            <p className="text-xl text-kcs-blue-100 max-w-3xl mx-auto leading-relaxed">
-              KCS provides a nurturing Christian environment where students grow
-              academically, socially, and spiritually.
+            <p className="mx-auto max-w-3xl text-xl leading-relaxed text-kcs-blue-100">
+              KCS provides a nurturing Christian environment where students grow academically, socially, and spiritually.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── STORY & MISSION ────────────────────────────────────────────────── */}
       <section className="section-padding bg-white dark:bg-kcs-blue-950">
         <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid items-center gap-16 lg:grid-cols-2">
             <AnimSection>
               <motion.div variants={fadeUp}>
-                <span className="badge-blue text-sm mb-3">Our Story</span>
-                <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white mb-5">
-                  A Legacy Built on{' '}
-                  <span className="text-gradient-blue">Faith & Purpose</span>
+                <span className="badge-blue mb-3 text-sm">Our Story</span>
+                <h2 className="mb-5 text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">
+                  A Legacy Built on <span className="text-gradient-blue">Faith & Purpose</span>
                 </h2>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
-                  Kinshasa Christian School prioritizes the spiritual development of students
-                  through prayer, services, Bible studies, and mentorship programs.
+                <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
+                  Kinshasa Christian School prioritizes the spiritual development of students through prayer, services, Bible studies, and mentorship programs.
                 </p>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
-                  KCS is committed to excellence in teaching and care while helping children
-                  become compassionate leaders ready to transform society with a biblical worldview.
+                <p className="mb-6 leading-relaxed text-gray-600 dark:text-gray-300">
+                  KCS is committed to excellence in teaching and care while helping children become compassionate leaders ready to transform society with a biblical worldview.
                 </p>
                 <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { icon: Users, label: 'KCS Students', sub: 'Academic, social, spiritual growth' },
-                    { icon: GraduationCap, label: 'Life-long Learners', sub: 'Passionate and independent' },
-                    { icon: Globe, label: 'Biblical Worldview', sub: 'Ready to transform society' },
-                    { icon: Award, label: 'Excellence', sub: 'High standards in education and care' },
-                  ].map(({ icon: Icon, label, sub }) => (
-                    <div key={label} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-kcs-blue-900/30">
-                      <div className="w-9 h-9 rounded-lg bg-kcs-blue-100 dark:bg-kcs-blue-800 flex items-center justify-center flex-shrink-0">
+                  {storyStats.map(({ icon: Icon, label, sub }) => (
+                    <div key={label} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-900/30">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-kcs-blue-100 dark:bg-kcs-blue-800">
                         <Icon size={18} className="text-kcs-blue-600 dark:text-kcs-blue-300" />
                       </div>
                       <div>
-                        <p className="font-semibold text-kcs-blue-900 dark:text-white text-sm">{label}</p>
+                        <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{label}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{sub}</p>
                       </div>
                     </div>
@@ -143,12 +174,12 @@ const AboutPage = () => {
                 <img
                   src="https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&q=80"
                   alt="KCS Campus"
-                  className="w-full rounded-3xl shadow-kcs-lg object-cover h-[500px]"
+                  className="h-[500px] w-full rounded-3xl object-cover shadow-kcs-lg"
                   loading="lazy"
                 />
-                <div className="absolute -bottom-6 -left-6 bg-white dark:bg-kcs-blue-900 rounded-2xl p-5 shadow-kcs-lg border border-gray-100 dark:border-kcs-blue-800 max-w-xs">
+                <div className="absolute -bottom-6 -left-6 max-w-xs rounded-2xl border border-gray-100 bg-white p-5 shadow-kcs-lg dark:border-kcs-blue-800 dark:bg-kcs-blue-900">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl kcs-gradient-gold flex items-center justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl kcs-gradient-gold">
                       <BookOpen size={22} className="text-kcs-blue-900" />
                     </div>
                     <div>
@@ -163,53 +194,27 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* ── MISSION, VISION, VALUES ─────────────────────────────────────── */}
       <section className="section-padding bg-gray-50 dark:bg-kcs-blue-950/50">
         <div className="container-custom">
           <AnimSection>
-            <motion.div variants={fadeUp} className="text-center mb-14">
+            <motion.div variants={fadeUp} className="mb-14 text-center">
               <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">
                 Mission, Vision & Values
               </h2>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
-              {[
-                {
-                  icon: Heart,
-                  title: 'Our Mission',
-                  color: 'text-red-500',
-                  bg: 'bg-red-50 dark:bg-red-900/20',
-                  border: 'border-red-100 dark:border-red-800/30',
-                  text: 'To provide an exceptional American education rooted in Christian values, empowering students in Kinshasa and across the Congo to become servant leaders who transform their communities and the world.',
-                },
-                {
-                  icon: Lightbulb,
-                  title: 'Our Vision',
-                  color: 'text-kcs-gold-600',
-                  bg: 'bg-kcs-gold-50 dark:bg-kcs-gold-900/20',
-                  border: 'border-kcs-gold-100 dark:border-kcs-gold-800/30',
-                  text: 'To be the leading international school in Central Africa, recognized for academic excellence, spiritual depth, and the development of globally-minded leaders who make a lasting impact.',
-                },
-                {
-                  icon: MapPin,
-                  title: 'Our Promise',
-                  color: 'text-kcs-blue-600',
-                  bg: 'bg-kcs-blue-50 dark:bg-kcs-blue-900/20',
-                  border: 'border-kcs-blue-100 dark:border-kcs-blue-800/30',
-                  text: 'Every student who walks through our doors receives a world-class education, personalized care, and the tools to succeed at the highest levels — academically, professionally, and spiritually.',
-                },
-              ].map(({ icon: Icon, title, color, bg, border, text }) => (
+            <div className="mb-12 grid gap-6 md:grid-cols-3">
+              {missionCards.map(({ icon: Icon, title, color, bg, border, text }) => (
                 <motion.div
                   key={title}
                   variants={fadeUp}
-                  className={`p-8 rounded-3xl bg-white dark:bg-kcs-blue-900/50 border ${border} shadow-sm`}
+                  className={`rounded-3xl border bg-white p-8 shadow-sm dark:bg-kcs-blue-900/50 ${border}`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center mb-5`}>
+                  <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${bg}`}>
                     <Icon size={26} className={color} />
                   </div>
-                  <h3 className="text-xl font-bold font-display text-kcs-blue-900 dark:text-white mb-3">{title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{text}</p>
+                  <h3 className="mb-3 text-xl font-bold font-display text-kcs-blue-900 dark:text-white">{title}</h3>
+                  <p className="leading-relaxed text-gray-600 dark:text-gray-300">{text}</p>
                 </motion.div>
               ))}
             </div>
@@ -217,49 +222,34 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* ── LEADERSHIP ──────────────────────────────────────────────────── */}
       <section className="section-padding bg-white dark:bg-kcs-blue-950">
         <div className="container-custom">
           <AnimSection>
-            <motion.div variants={fadeUp} className="text-center mb-14">
-              <span className="badge-gold text-sm mb-3">Our Team</span>
-              <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">
-                Leadership Team
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-xl mx-auto">
+            <motion.div variants={fadeUp} className="mb-14 text-center">
+              <span className="badge-gold mb-3 text-sm">Our Team</span>
+              <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">Leadership Team</h2>
+              <p className="mx-auto mt-3 max-w-xl text-gray-500 dark:text-gray-400">
                 Experienced, passionate educators dedicated to the KCS mission.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {leadership.map((person) => (
                 <motion.div
                   key={person.name}
                   variants={fadeUp}
                   whileHover={{ y: -6 }}
-                  className="group text-center bg-gray-50 dark:bg-kcs-blue-900/50 rounded-3xl p-6 border border-gray-100 dark:border-kcs-blue-800 hover:shadow-kcs transition-all duration-300"
+                  className="group rounded-3xl border border-gray-100 bg-gray-50 p-6 text-center transition-all duration-300 hover:shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50"
                 >
-                  <div className="relative w-24 h-24 mx-auto mb-4">
-                    <img
-                      src={person.image}
-                      alt={person.name}
-                      className="w-full h-full rounded-2xl object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                      }}
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 rounded-2xl kcs-gradient flex items-center justify-center text-white font-bold text-xl hidden">
-                      {person.initials}
-                    </div>
-                    <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-lg bg-kcs-gold-400 flex items-center justify-center">
+                  <div className="relative mx-auto mb-4 h-24 w-24">
+                    <img src={person.image} alt={person.name} className="h-full w-full rounded-2xl object-cover" loading="lazy" />
+                    <div className="absolute -bottom-2 -right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-kcs-gold-400">
                       <Shield size={14} className="text-kcs-blue-900" />
                     </div>
                   </div>
-                  <h3 className="font-bold text-kcs-blue-900 dark:text-white text-sm mb-0.5">{person.name}</h3>
-                  <p className="text-kcs-blue-600 dark:text-kcs-blue-400 text-xs font-medium mb-3">{person.title}</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{person.bio}</p>
+                  <h3 className="mb-0.5 text-sm font-bold text-kcs-blue-900 dark:text-white">{person.name}</h3>
+                  <p className="mb-3 text-xs font-medium text-kcs-blue-600 dark:text-kcs-blue-400">{person.title}</p>
+                  <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{person.bio}</p>
                 </motion.div>
               ))}
             </div>
@@ -267,78 +257,62 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* ── FACULTY ─────────────────────────────────────────────────────── */}
       <section className="section-padding bg-gray-50 dark:bg-kcs-blue-950/50">
         <div className="container-custom">
           <AnimSection>
-            <motion.div variants={fadeUp} className="text-center mb-12">
-              <span className="badge-blue text-sm mb-3">Faculty</span>
-              <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">
-                Expert Educators
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-3 max-w-xl mx-auto">
+            <motion.div variants={fadeUp} className="mb-12 text-center">
+              <span className="badge-blue mb-3 text-sm">Faculty</span>
+              <h2 className="text-4xl font-bold font-display text-kcs-blue-900 dark:text-white">Expert Educators</h2>
+              <p className="mx-auto mt-3 max-w-xl text-gray-500 dark:text-gray-400">
                 Over 80 certified teachers from around the world, bringing global perspectives to the classroom.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {faculty.map((member) => (
                 <motion.div
                   key={member.name}
                   variants={fadeUp}
-                  className="flex items-center gap-4 p-4 bg-white dark:bg-kcs-blue-900/50 rounded-2xl border border-gray-100 dark:border-kcs-blue-800 hover:shadow-kcs transition-all duration-300"
+                  className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 transition-all duration-300 hover:shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50"
                 >
-                  <div className="w-12 h-12 rounded-xl kcs-gradient flex items-center justify-center text-xl flex-shrink-0">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl kcs-gradient text-sm font-bold text-white">
                     {member.flag}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-kcs-blue-900 dark:text-white text-sm truncate">{member.name}</p>
+                    <p className="truncate text-sm font-semibold text-kcs-blue-900 dark:text-white">{member.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{member.dept}</p>
-                    <p className="text-xs text-kcs-gold-600 dark:text-kcs-gold-400 font-medium">{member.exp} experience</p>
+                    <p className="text-xs font-medium text-kcs-gold-600 dark:text-kcs-gold-400">{member.exp} experience</p>
                   </div>
                 </motion.div>
               ))}
             </div>
-
-            <motion.div variants={fadeUp} className="text-center mt-8">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                And <span className="font-bold text-kcs-blue-900 dark:text-white">70+ more</span> passionate educators across all departments.
-              </p>
-            </motion.div>
           </AnimSection>
         </div>
       </section>
 
-      {/* ── HISTORY TIMELINE ────────────────────────────────────────────── */}
       <section className="section-padding bg-gradient-to-br from-kcs-blue-950 to-kcs-blue-900">
         <div className="container-custom">
           <AnimSection>
-            <motion.div variants={fadeUp} className="text-center mb-14">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-kcs-gold-500/20 border border-kcs-gold-400/30 text-kcs-gold-300 text-sm font-medium mb-4">
+            <motion.div variants={fadeUp} className="mb-14 text-center">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-kcs-gold-400/30 bg-kcs-gold-500/20 px-4 py-2 text-sm font-medium text-kcs-gold-300">
                 Our Journey
               </span>
-              <h2 className="text-4xl font-bold font-display text-white">
-                KCS Through the Years
-              </h2>
+              <h2 className="text-4xl font-bold font-display text-white">KCS Through the Years</h2>
             </motion.div>
 
             <div className="relative">
-              <div className="absolute left-1/2 transform -translate-x-px h-full w-0.5 bg-kcs-blue-700" />
+              <div className="absolute left-1/2 h-full w-0.5 -translate-x-px bg-kcs-blue-700" />
               <div className="space-y-10">
                 {milestones.map((m, i) => (
-                  <motion.div
-                    key={m.year}
-                    variants={fadeUp}
-                    className={`relative flex items-center ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}
-                  >
+                  <motion.div key={m.year} variants={fadeUp} className={`relative flex items-center ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
                     <div className={`w-1/2 ${i % 2 === 0 ? 'pr-10 text-right' : 'pl-10'}`}>
-                      <div className={`inline-block p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm ${i % 2 === 0 ? 'ml-auto' : ''} max-w-xs`}>
-                        <p className="text-kcs-gold-400 font-bold text-lg font-display">{m.year}</p>
-                        <p className="text-white font-semibold mb-1">{m.event}</p>
-                        <p className="text-kcs-blue-200 text-sm">{m.desc}</p>
+                      <div className={`inline-block max-w-xs rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm ${i % 2 === 0 ? 'ml-auto' : ''}`}>
+                        <p className="text-lg font-bold font-display text-kcs-gold-400">{m.year}</p>
+                        <p className="mb-1 font-semibold text-white">{m.event}</p>
+                        <p className="text-sm text-kcs-blue-200">{m.desc}</p>
                       </div>
                     </div>
-                    <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-kcs-gold-400 border-4 border-kcs-blue-900 z-10" />
+                    <div className="absolute left-1/2 z-10 h-4 w-4 -translate-x-1/2 rounded-full border-4 border-kcs-blue-900 bg-kcs-gold-400" />
                     <div className="w-1/2" />
                   </motion.div>
                 ))}
@@ -348,22 +322,19 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* ── CTA ─────────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white dark:bg-kcs-blue-950">
+      <section className="bg-white py-20 dark:bg-kcs-blue-950">
         <div className="container-custom text-center">
           <AnimSection>
             <motion.div variants={fadeUp}>
-              <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white mb-4">
-                Become Part of the KCS Story
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">
+              <h2 className="mb-4 text-3xl font-bold font-display text-kcs-blue-900 dark:text-white">Become Part of the KCS Story</h2>
+              <p className="mx-auto mb-8 max-w-xl text-gray-600 dark:text-gray-400">
                 Join our community of learners, leaders, and believers. Your chapter in the KCS story starts with an application.
               </p>
-              <div className="flex gap-4 justify-center">
+              <div className="flex justify-center gap-4">
                 <Link to="/admissions" className="btn-primary flex items-center gap-2">
                   Apply Now <ArrowRight size={18} />
                 </Link>
-                <Link to="/contact" className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-kcs-blue-200 dark:border-kcs-blue-700 text-kcs-blue-700 dark:text-kcs-blue-300 font-semibold hover:bg-kcs-blue-50 dark:hover:bg-kcs-blue-900/20 transition-all duration-200">
+                <Link to="/contact" className="flex items-center gap-2 rounded-xl border-2 border-kcs-blue-200 px-6 py-3 font-semibold text-kcs-blue-700 transition-all duration-200 hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-300 dark:hover:bg-kcs-blue-900/20">
                   Contact Us
                 </Link>
               </div>

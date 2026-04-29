@@ -14,7 +14,6 @@ const Header = () => {
   const { theme, toggleTheme, language, setLanguage, unreadCount } = useUIStore()
   const { isAuthenticated, user } = useAuthStore()
   const location = useLocation()
-  const headerRef = useRef<HTMLElement | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -30,14 +29,10 @@ const Header = () => {
   useEffect(() => {
     if (!mobileOpen) return
 
-    const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!headerRef.current?.contains(event.target as Node)) {
-        setMobileOpen(false)
-      }
-    }
+    const closeOnAppClick = () => setMobileOpen(false)
 
-    document.addEventListener('pointerdown', closeOnOutsideClick)
-    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('pointerdown', closeOnAppClick, true)
+    return () => document.removeEventListener('pointerdown', closeOnAppClick, true)
   }, [mobileOpen])
 
   const currentLanguage = (i18n.resolvedLanguage || language).startsWith('fr') ? 'fr' : 'en'
@@ -45,7 +40,7 @@ const Header = () => {
   const toggleLanguage = () => {
     const next = currentLanguage === 'en' ? 'fr' : 'en'
     setLanguage(next)
-    i18n.changeLanguage(next)
+    void i18n.changeLanguage(next)
   }
 
   const isHomePage = location.pathname === '/'
@@ -64,7 +59,6 @@ const Header = () => {
 
   return (
     <header
-      ref={headerRef}
       className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 transition-all duration-500"
     >
       <div className="container-custom">
@@ -134,7 +128,7 @@ const Header = () => {
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
-              aria-label="Changer la langue"
+              aria-label={t('common.language')}
             >
               <Globe size={16} />
               <span className="hidden sm:inline">{currentLanguage.toUpperCase()}</span>
@@ -148,7 +142,7 @@ const Header = () => {
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
-              aria-label="Changer le theme"
+              aria-label={theme === 'dark' ? t('common.lightMode') : t('common.darkMode')}
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -207,7 +201,7 @@ const Header = () => {
                   ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                   : 'text-white hover:bg-white/10'
               }`}
-              aria-label="Ouvrir le menu"
+              aria-label={mobileOpen ? t('common.close') : t('nav.portal')}
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
