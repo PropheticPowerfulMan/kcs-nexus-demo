@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
   Users, Settings, Bell, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen,
   GraduationCap, BarChart3, MessageSquare, LogOut,
-  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet, WalletCards
+  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet, WalletCards, ClipboardCheck, AlertTriangle
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -52,9 +52,11 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         ...base,
         { to: '/portal/teacher/courses', label: 'My Courses', icon: BookOpen },
         { to: '/portal/teacher/students', label: 'Students', icon: Users },
+        { to: '/portal/teacher/attendance', label: 'Attendance', icon: ClipboardCheck },
         { to: '/portal/teacher/assignments', label: 'Assignments', icon: FileText },
         { to: '/portal/teacher/grades', label: 'Grade Book', icon: BarChart3 },
         { to: '/portal/teacher/reports', label: 'Reports', icon: FileSpreadsheet },
+        { to: '/portal/teacher/discipline', label: 'Discipline Report', icon: AlertTriangle },
         { to: '/portal/teacher/messages', label: 'Messages', icon: MessageSquare },
       ]
     case 'staff':
@@ -134,6 +136,7 @@ const PortalSidebar = () => {
           <NavLink
             key={to}
             to={to}
+            end={to === (user.role === 'admin' ? '/admin' : `/portal/${user.role}`)}
             onClick={() => isMobile && setSidebarOpen(false)}
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''} ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`

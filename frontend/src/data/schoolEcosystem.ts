@@ -167,6 +167,37 @@ export const reportCards = [
   { student: 'David Kabongo', term: 'Term 3', average: 78, conduct: 'Good', teacherComment: 'David participates well and needs consistency in homework.', principalStatus: 'Pending review', download: 'Draft' },
 ]
 
+export const disciplineReports = [
+  {
+    id: 'disc-001',
+    studentId: 'stu-david',
+    student: 'David Kabongo',
+    date: 'Apr 22',
+    level: 'medium',
+    category: 'Homework consistency',
+    incident: 'Repeated missing math practice affected readiness for science group work.',
+    context: 'Third missing assignment in two weeks, combined with one late arrival on Apr 22.',
+    actionTaken: 'Restorative meeting with advisor, parent message drafted, daily planner check assigned.',
+    followUp: 'Review completion log on Apr 29 and escalate to academic coordinator if no improvement.',
+    parentContact: 'Pending confirmation',
+    status: 'Open',
+  },
+  {
+    id: 'disc-002',
+    studentId: 'stu-elise',
+    student: 'Elise Kabongo',
+    date: 'Apr 18',
+    level: 'low',
+    category: 'Classroom leadership',
+    incident: 'Peer lab group conflict resolved after guided discussion.',
+    context: 'Student accepted feedback and helped reset lab roles before submission.',
+    actionTaken: 'Teacher conference and positive leadership note.',
+    followUp: 'Monitor collaboration during next AP Biology lab.',
+    parentContact: 'Not required',
+    status: 'Resolved',
+  },
+]
+
 export const transcripts = [
   { student: 'Elise Kabongo', years: '2023-2026', credits: 24, cumulativeGpa: 3.8, status: 'Ready for export' },
   { student: 'David Kabongo', years: '2025-2026', credits: 8, cumulativeGpa: 3.1, status: 'In progress' },

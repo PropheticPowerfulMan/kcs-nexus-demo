@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Bell, BookOpen, Brain, Calendar, CheckCircle2, ChevronRight,
-  Clock, FileText, GraduationCap, MessageSquare, TrendingUp, Users
+  Clock, FileText, GraduationCap, MessageSquare, TrendingUp, Users, AlertTriangle, ClipboardCheck
 } from 'lucide-react'
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
@@ -12,14 +12,18 @@ import {
   aiRecommendations,
   assignments as ecosystemAssignments,
   attendance as ecosystemAttendance,
+  attendanceAnalytics,
+  disciplineReports,
   grades as ecosystemGrades,
   gradebookCategories,
   gradingScales,
+  internalThreads,
   lmsResources,
   messages as ecosystemMessages,
   reportCards,
   schedules as ecosystemSchedules,
   students as ecosystemStudents,
+  subjects,
 } from '@/data/schoolEcosystem'
 
 const todayClasses = [
@@ -47,8 +51,256 @@ const messages = [
   { id: 3, from: 'Parent of Elise K.', subject: 'Question about AP exam preparation', time: '5h ago' },
 ]
 
+const getTeacherSegment = (pathname: string) => {
+  const segment = pathname.split('/').filter(Boolean).at(-1)
+  return !segment || segment === 'teacher' || segment === 'dashboard' ? 'dashboard' : segment
+}
+
+const statusTone = (value: string) => {
+  if (['high', 'absent', 'missing', 'Open'].includes(value)) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (['medium', 'late', 'pending', 'Pending confirmation'].includes(value)) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+  return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+}
+
+const TeacherSectionView = ({ segment }: { segment: string }) => {
+  const sectionTitles: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
+    courses: { title: 'My Courses', subtitle: 'Assigned classes, rooms, schedules, and teaching load.', icon: BookOpen },
+    students: { title: 'Students', subtitle: 'Academic profile, risk level, strengths, and support needs for each learner.', icon: Users },
+    attendance: { title: 'Attendance', subtitle: 'Daily attendance records, class trends, and follow-up signals.', icon: ClipboardCheck },
+    assignments: { title: 'Assignments', subtitle: 'Homework status, priorities, missing work, and LMS resources.', icon: FileText },
+    grades: { title: 'Grade Book', subtitle: 'Recent scores, grading categories, scale, and release status.', icon: TrendingUp },
+    reports: { title: 'Reports', subtitle: 'Report cards, AI comments, exports, and principal approval status.', icon: GraduationCap },
+    discipline: { title: 'Detailed Student Discipline Report', subtitle: 'Incident context, action taken, parent contact, and follow-up plan.', icon: AlertTriangle },
+    messages: { title: 'Messages', subtitle: 'Teacher inbox, parent threads, and internal coordination messages.', icon: MessageSquare },
+  }
+
+  const meta = sectionTitles[segment] ?? sectionTitles.reports
+  const Icon = meta.icon
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-2xl border border-kcs-blue-100 bg-white p-5 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">
+              <Icon size={22} />
+            </div>
+            <div>
+              <h2 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">{meta.title}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{meta.subtitle}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-primary flex items-center gap-2 py-2 text-sm"><CheckCircle2 size={16} /> Save updates</button>
+            <button className="btn-gold flex items-center gap-2 py-2 text-sm"><FileText size={16} /> Export PDF</button>
+          </div>
+        </div>
+      </div>
+
+      {segment === 'courses' && (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {subjects.map((subject) => (
+            <div key={subject.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.className}</p>
+              <h3 className="mt-2 font-bold text-kcs-blue-900 dark:text-white">{subject.name}</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subject.room}</p>
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">Teacher: {subject.teacher}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {segment === 'students' && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {ecosystemStudents.map((student) => (
+            <div key={student.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-kcs-blue-900 dark:text-white">{student.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{student.grade}{student.section} - advisor {student.advisor}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(student.risk)}`}>{student.risk} risk</span>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                <div><p className="font-bold text-kcs-blue-900 dark:text-white">{student.average}%</p><p className="text-xs text-gray-500">Average</p></div>
+                <div><p className="font-bold text-kcs-blue-900 dark:text-white">{student.attendance}%</p><p className="text-xs text-gray-500">Attendance</p></div>
+                <div><p className="font-bold text-kcs-blue-900 dark:text-white">#{student.rank}</p><p className="text-xs text-gray-500">Rank</p></div>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{student.aiInsight}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {segment === 'attendance' && (
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Daily Register</h3>
+            <div className="space-y-3">
+              {ecosystemAttendance.map((record) => {
+                const student = ecosystemStudents.find((item) => item.id === record.studentId)
+                return (
+                  <div key={`${record.studentId}-${record.date}`} className="flex items-center justify-between rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <div>
+                      <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{record.date} - {record.className}</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusTone(record.status)}`}>{record.status}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {attendanceAnalytics.map((item) => (
+              <div key={item.scope} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+                <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.scope}</p>
+                <p className="mt-3 font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">{item.present}%</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.late}% late - {item.absent}% absent</p>
+                <p className="mt-3 text-xs font-semibold capitalize text-kcs-blue-600 dark:text-kcs-blue-300">{item.trend}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {segment === 'assignments' && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {ecosystemAssignments.map((assignment) => {
+            const student = ecosystemStudents.find((item) => item.id === assignment.studentId)
+            return (
+              <div key={assignment.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-kcs-blue-900 dark:text-white">{assignment.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{assignment.subject} - {student?.name}</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusTone(assignment.status)}`}>{assignment.status}</span>
+                </div>
+                <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">Due: {assignment.due} - Priority: {assignment.priority}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {segment === 'grades' && (
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Recent Grade Entries</h3>
+            <div className="space-y-3">
+              {ecosystemGrades.map((grade) => {
+                const student = ecosystemStudents.find((item) => item.id === grade.studentId)
+                return (
+                  <div key={`${grade.studentId}-${grade.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name} - {grade.subject}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{grade.assessment} - {grade.score}/{grade.max} - {grade.date}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Category Weights</h3>
+            <div className="space-y-3">
+              {gradebookCategories.map((category) => (
+                <div key={category.name}>
+                  <div className="flex justify-between text-sm font-semibold text-kcs-blue-900 dark:text-white"><span>{category.name}</span><span>{category.weight}%</span></div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-kcs-blue-800"><div className="h-full bg-kcs-blue-600" style={{ width: `${category.average}%` }} /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {segment === 'reports' && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {reportCards.map((card) => (
+            <div key={card.student} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-kcs-blue-900 dark:text-white">{card.student}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{card.term} - Average {card.average}% - Conduct {card.conduct}</p>
+                </div>
+                <span className="badge-blue text-xs">{card.principalStatus}</span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{card.teacherComment}</p>
+              <p className="mt-3 text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{card.download}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {segment === 'discipline' && (
+        <div className="space-y-4">
+          {disciplineReports.map((report) => (
+            <article key={report.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-kcs-blue-500">{report.id} - {report.date}</p>
+                  <h3 className="mt-1 font-display text-xl font-bold text-kcs-blue-900 dark:text-white">{report.student}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{report.category}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${statusTone(report.level)}`}>{report.level}</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(report.status)}`}>{report.status}</span>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {[
+                  ['Incident', report.incident],
+                  ['Context', report.context],
+                  ['Action taken', report.actionTaken],
+                  ['Follow-up plan', report.followUp],
+                  ['Parent contact', report.parentContact],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <p className="text-xs font-semibold uppercase text-gray-400">{label}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-gray-700 dark:text-gray-300">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {segment === 'messages' && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Teacher Inbox</h3>
+            <div className="space-y-3">
+              {[...messages, ...ecosystemMessages.filter((message) => message.toRole === 'teacher').map((message, index) => ({ id: index + 10, from: message.from, subject: message.subject, time: message.requiresResponse ? 'Response needed' : 'FYI' }))].map((message) => (
+                <div key={`${message.id}-${message.subject}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                  <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{message.from}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{message.subject} - {message.time}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Active Threads</h3>
+            <div className="space-y-3">
+              {internalThreads.map((thread) => (
+                <div key={thread.subject} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                  <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{thread.subject}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{thread.channel} - {thread.unread} unread</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 const TeacherPortal = () => {
   const { user } = useAuthStore()
+  const location = useLocation()
+  const activeSegment = getTeacherSegment(location.pathname)
+  const isDashboard = activeSegment === 'dashboard'
 
   return (
     <div className="portal-shell flex">
@@ -77,8 +329,12 @@ const TeacherPortal = () => {
         </div>
 
         <div className="space-y-6 p-6">
-          <PortalSectionPanel />
+          {isDashboard && <PortalSectionPanel />}
 
+          {!isDashboard && <TeacherSectionView segment={activeSegment} />}
+
+          {isDashboard && (
+            <>
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <h2 className="mb-3 font-bold text-kcs-blue-900 dark:text-white">Teacher Command Center</h2>
@@ -357,6 +613,8 @@ const TeacherPortal = () => {
               </Link>
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>
