@@ -74,6 +74,35 @@ const inferGradeLabel = (className: string) => {
   return className
 }
 
+const rosterNames = [
+  'Anne Itela Mouyeke',
+  'Assimbo Loango Grace',
+  'Beni Amisi Ali',
+  'Daniella Sambu',
+  'Dimanyinayi Tshibanda',
+  'Eliane Kazadi Mbuyi',
+  'Ephraim Kiriza',
+  'Exauce Mujiba',
+  'Fatima Abera Merd',
+  'Fortune Nacera',
+  'Gethsemane Osombo',
+  "Kabeya N'tumba",
+  'Kenania Ofutanya',
+  'Kenaya Malonda',
+  'Laylay Marcel',
+  'Leyana Badjeme',
+  'Lyz Nzanzuba Nzau',
+  'Mordekai Mutie',
+  'Reuel Mbayo Mutombo',
+  'Tshilumbu Mukendi',
+]
+
+const gradingScaleRows = [
+  ['99', '100', 'A+'], ['94', '98', 'A'], ['92', '93', 'A-'], ['90', '91', 'B+'],
+  ['84', '89', 'B'], ['82', '83', 'B-'], ['80', '81', 'C+'], ['72', '79', 'C'],
+  ['70', '71', 'C-'], ['68', '69', 'D+'], ['62', '67', 'D'], ['60', '61', 'D-'], ['0', '60', 'F'],
+]
+
 const TeacherSectionView = ({ segment }: { segment: string }) => {
   const sectionTitles: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
     courses: { title: 'My Courses', subtitle: 'Assigned classes, rooms, schedules, and teaching load.', icon: BookOpen },
@@ -91,6 +120,22 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const Icon = meta.icon
   const superAdminStudentPool = useMemo(() => [
     ...ecosystemStudents,
+    ...rosterNames.map((name, index) => ({
+      id: `stu-11-${index + 1}`,
+      name,
+      grade: 'Grade 11',
+      section: 'A',
+      parentId: `parent-11-${index + 1}`,
+      advisor: 'Dr. Mukendi',
+      average: 70 + (index % 6) * 4,
+      gpa: 2.6 + (index % 5) * 0.2,
+      rank: index + 1,
+      attendance: 88 + (index % 8),
+      risk: index % 7 === 0 ? 'medium' : 'low',
+      strengths: ['Participation', 'Course readiness'],
+      weaknesses: ['Pending teacher notes'],
+      aiInsight: `${name} is part of the official 11th Grade roster and will appear automatically in any 11th Grade subject.`,
+    })),
     {
       id: 'stu-grace',
       name: 'Grace Mwamba',
@@ -125,21 +170,29 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     },
   ], [])
 
+  const getStudentGradeLabel = (student: { grade: string; section: string }) => inferGradeLabel(`${student.grade}${student.section}`)
+  const getRosterForGrade = (grade: string) => superAdminStudentPool.filter((student) => getStudentGradeLabel(student) === grade)
+
   const [actionMessage, setActionMessage] = useState('')
   const [courses, setCourses] = useState(() =>
-    subjects.map((subject, index) => ({
-      ...subject,
-      abbreviation: subject.name.split(' ').map((word) => word[0]).join('').slice(0, 6).toUpperCase(),
-      creditHours: index === 1 ? 4 : index === 0 ? 3 : 2,
-      gradeLevels: [inferGradeLabel(subject.className)],
-      studentIds: subject.className.includes('11') ? ['stu-elise'] : subject.className.includes('8') ? ['stu-david'] : [],
-      status: 'active',
-    })),
+    subjects.map((subject, index) => {
+      const gradeLevel = inferGradeLabel(subject.className)
+      return {
+        ...subject,
+        abbreviation: subject.name.split(' ').map((word) => word[0]).join('').slice(0, 6).toUpperCase(),
+        creditHours: index === 1 ? 4 : index === 0 ? 3 : 2,
+        gradeLevels: [gradeLevel],
+        studentIds: getRosterForGrade(gradeLevel).map((student) => student.id),
+        status: 'active',
+      }
+    }),
   )
   const [courseTab, setCourseTab] = useState<'setup' | 'enrollment'>('setup')
   const [courseSearch, setCourseSearch] = useState('')
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [selectedEnrollmentCourseId, setSelectedEnrollmentCourseId] = useState(subjects[0].id)
+  const [selectedGradebookCourseId, setSelectedGradebookCourseId] = useState(subjects[1].id)
+  const [gradebookScores, setGradebookScores] = useState<Record<string, string>>({})
   const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
   const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
   const [assignmentList, setAssignmentList] = useState(() => ecosystemAssignments)
@@ -265,12 +318,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   }
 
   const toggleCourseGrade = (grade: string) => {
-    setCourseDraft((draft) => ({
-      ...draft,
-      gradeLevels: draft.gradeLevels.includes(grade)
-        ? draft.gradeLevels.filter((item) => item !== grade)
-        : [...draft.gradeLevels, grade],
-    }))
+    setCourseDraft((draft) => ({ ...draft, gradeLevels: [grade], className: grade }))
   }
 
   const resetCourseDraft = () => {
@@ -312,22 +360,27 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   }
 
   const createCourse = () => {
+    const selectedGrade = courseDraft.gradeLevels[0] ?? '10th Grade'
+    const roster = getRosterForGrade(selectedGrade)
     const nextCourse = {
       id: editingCourseId ?? `course-${Date.now()}`,
       name: courseDraft.name,
       abbreviation: courseDraft.abbreviation,
       creditHours: courseDraft.creditHours,
       teacher: 'Dr. Mukendi',
-      className: courseDraft.className,
+      className: selectedGrade,
       room: courseDraft.room,
-      gradeLevels: courseDraft.gradeLevels,
-      studentIds: courseDraft.studentId ? [courseDraft.studentId] : [],
+      gradeLevels: [selectedGrade],
+      studentIds: roster.map((student) => student.id),
       status: editingCourseId ? 'updated' : 'draft',
     }
-    setCourses((current) => editingCourseId ? current.map((course) => course.id === editingCourseId ? { ...course, ...nextCourse, studentIds: course.studentIds } : course) : [nextCourse, ...current])
-    const student = findStudent(courseDraft.studentId)
-    if (student && !teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
-    runAction(`${nextCourse.name} ${editingCourseId ? 'updated' : 'created'} and prepared for Super Admin sync.`)
+    setCourses((current) => editingCourseId ? current.map((course) => course.id === editingCourseId ? { ...course, ...nextCourse } : course) : [nextCourse, ...current])
+    setTeacherStudents((current) => {
+      const existingIds = new Set(current.map((student) => student.id))
+      return [...roster.filter((student) => !existingIds.has(student.id)), ...current]
+    })
+    setSelectedGradebookCourseId(nextCourse.id)
+    runAction(`${nextCourse.name} ${editingCourseId ? 'updated' : 'created'} for ${selectedGrade}; ${roster.length} official student(s) were enrolled and sent to Grade Book.`)
     setEditingCourseId(null)
   }
 
@@ -369,6 +422,18 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     setSelectedEnrollmentCourseId(courseId)
     setCourseTab('enrollment')
     runAction(`${course?.name ?? 'Subject'} enrollment opened.`)
+  }
+
+  const selectedGradebookCourse = courses.find((course) => course.id === selectedGradebookCourseId) ?? courses[0]
+  const gradebookStudents = selectedGradebookCourse?.studentIds.map((studentId) => findStudent(studentId)).filter(Boolean) ?? []
+  const gradebookValues = gradebookStudents
+    .map((student) => Number(gradebookScores[`${selectedGradebookCourse?.id}-${student?.id}`]))
+    .filter((score) => Number.isFinite(score))
+  const gradebookAverage = gradebookValues.length ? Math.round(gradebookValues.reduce((sum, score) => sum + score, 0) / gradebookValues.length) : 0
+  const gradebookMedian = gradebookValues.length ? [...gradebookValues].sort((a, b) => a - b)[Math.floor(gradebookValues.length / 2)] : 0
+
+  const updateGradebookScore = (studentId: string, score: string) => {
+    setGradebookScores((current) => ({ ...current, [`${selectedGradebookCourse?.id}-${studentId}`]: score }))
   }
 
   const importStudent = () => {
@@ -528,20 +593,19 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                         Room
                         <input className={inputClass} value={courseDraft.room} onChange={(event) => setCourseDraft((draft) => ({ ...draft, room: event.target.value }))} />
                       </label>
-                      <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                        Initial enrollment
-                        <select className={inputClass} value={courseDraft.studentId} onChange={(event) => setCourseDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
-                          {superAdminStudentPool.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section}</option>)}
-                        </select>
-                      </label>
+                      <div className="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-gray-600 dark:bg-kcs-blue-950/40 dark:text-gray-300">
+                        Auto enrollment
+                        <p className="mt-1 text-lg font-bold text-kcs-blue-900 dark:text-white">{getRosterForGrade(courseDraft.gradeLevels[0]).length}</p>
+                        <p className="font-normal text-gray-400">official student(s) in selected class</p>
+                      </div>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Which grades do you teach the subject for?</p>
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Which class do you teach the subject for?</p>
                       <div className="mt-2 rounded-xl border border-gray-100 bg-white p-3 dark:border-kcs-blue-800 dark:bg-kcs-blue-950/30">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
                         {gradeOptions.map((grade) => (
                           <label key={grade} className="flex min-w-0 items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
-                            <input className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-kcs-blue-700 focus:ring-kcs-blue-500" type="checkbox" checked={courseDraft.gradeLevels.includes(grade)} onChange={() => toggleCourseGrade(grade)} />
+                            <input className="h-4 w-4 flex-shrink-0 border-gray-300 text-kcs-blue-700 focus:ring-kcs-blue-500" type="radio" name="course-grade" checked={courseDraft.gradeLevels[0] === grade} onChange={() => toggleCourseGrade(grade)} />
                             <span className="min-w-0 break-words leading-snug">{grade}</span>
                           </label>
                         ))}
@@ -783,42 +847,106 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       )}
 
       {segment === 'grades' && (
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Recent Grade Entries</h3>
-            <div className="mb-4 grid gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
-              <select className={inputClass} value={gradeDraft.studentId} onChange={(event) => setGradeDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
-                {teacherStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}
-              </select>
-              <div className="grid gap-2 md:grid-cols-5">
-                <input className={inputClass} value={gradeDraft.subject} onChange={(event) => setGradeDraft((draft) => ({ ...draft, subject: event.target.value }))} />
-                <input className={inputClass} value={gradeDraft.assessment} onChange={(event) => setGradeDraft((draft) => ({ ...draft, assessment: event.target.value }))} />
-                <input className={inputClass} type="number" value={gradeDraft.score} onChange={(event) => setGradeDraft((draft) => ({ ...draft, score: Number(event.target.value) }))} />
-                <input className={inputClass} value={gradeDraft.date} onChange={(event) => setGradeDraft((draft) => ({ ...draft, date: event.target.value }))} />
-                <button onClick={addGrade} className={compactButton}>Add</button>
+        <div className="space-y-6">
+          <div className={panelClass}>
+            <h3 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">Gradebook</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Learn more about useful tools, copying grades and general setup for the Gradebook.</p>
+            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1.4fr_0.6fr]">
+              <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Semester
+                <select className={inputClass} defaultValue="2025-2026, SECOND SEMESTER Q4 2025-2026">
+                  <option>2025-2026, SECOND SEMESTER Q4 2025-2026</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                Subject
+                <select className={inputClass} value={selectedGradebookCourse?.id} onChange={(event) => setSelectedGradebookCourseId(event.target.value)}>
+                  {courses.map((course) => <option key={course.id} value={course.id}>({course.gradeLevels[0]}) {course.name} - {course.abbreviation}</option>)}
+                </select>
+              </label>
+              <div className="rounded-xl bg-gray-50 px-4 py-3 text-center dark:bg-kcs-blue-800/30">
+                <p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{gradebookStudents.length}</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Students</p>
               </div>
             </div>
-            <div className="space-y-3">
-              {gradeEntries.map((grade, index) => {
-                const student = findStudent(grade.studentId)
-                return (
-                  <div key={`${grade.studentId}-${grade.assessment}-${index}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
-                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{student?.name} - {grade.subject}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{grade.assessment} - {grade.score}/{grade.max} - {grade.date}</p>
-                  </div>
-                )
-              })}
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="flex flex-col gap-3 border-b border-gray-100 p-4 dark:border-kcs-blue-800 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase text-kcs-blue-500">Students</p>
+                <h4 className="font-bold text-kcs-blue-900 dark:text-white">Final Grade / 100</h4>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-500 dark:text-gray-300">
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-kcs-blue-800/50">Show full name</span>
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-kcs-blue-800/50">Show columns</span>
+                <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-kcs-blue-800/50">Hide columns</span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-kcs-blue-800/40 dark:text-gray-300">
+                  <tr>
+                    <th className="px-4 py-3">Student</th>
+                    <th className="px-4 py-3 text-center">I</th>
+                    <th className="px-4 py-3 text-center">I</th>
+                    <th className="px-4 py-3 text-center">Final Grade</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
+                  {gradebookStudents.map((student) => {
+                    if (!student) return null
+                    const key = `${selectedGradebookCourse?.id}-${student.id}`
+                    const score = gradebookScores[key] ?? ''
+                    return (
+                      <tr key={student.id} className="text-gray-700 dark:text-gray-300">
+                        <td className="px-4 py-3 font-semibold text-kcs-blue-900 dark:text-white">{student.name}</td>
+                        <td className="px-4 py-3 text-center text-gray-400">I</td>
+                        <td className="px-4 py-3 text-center text-gray-400">I</td>
+                        <td className="px-4 py-3">
+                          <input className="mx-auto block w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm font-semibold text-kcs-blue-900 focus:border-kcs-blue-500 focus:outline-none focus:ring-2 focus:ring-kcs-blue-100 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" value={score} onChange={(event) => updateGradebookScore(student.id, event.target.value)} placeholder="0 / 100" />
+                        </td>
+                        <td className="px-4 py-3 text-xs">{score === '' ? 'Blank ignored' : Number(score) === 0 ? 'Zero counted' : 'Counted'}</td>
+                      </tr>
+                    )
+                  })}
+                  <tr className="bg-gray-50 font-bold text-kcs-blue-900 dark:bg-kcs-blue-800/30 dark:text-white">
+                    <td className="px-4 py-3">Average / Total</td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-center">{gradebookAverage} / 100</td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                  <tr className="bg-gray-50 font-bold text-kcs-blue-900 dark:bg-kcs-blue-800/30 dark:text-white">
+                    <td className="px-4 py-3">Median / Total</td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-center">{gradebookMedian} / 100</td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-            <h3 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Category Weights</h3>
-            <div className="space-y-3">
-              {gradebookCategories.map((category) => (
-                <div key={category.name}>
-                  <div className="flex justify-between text-sm font-semibold text-kcs-blue-900 dark:text-white"><span>{category.name}</span><span>{category.weight}%</span></div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-kcs-blue-800"><div className="h-full bg-kcs-blue-600" style={{ width: `${category.average}%` }} /></div>
-                </div>
-              ))}
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className={panelClass}>
+              <h4 className="font-bold text-kcs-blue-900 dark:text-white">Legend</h4>
+              <div className="mt-3 grid gap-2 text-sm text-gray-600 dark:text-gray-300">
+                {['<Leave Blank> - Grade will not be counted.', '0 (zero) - Grade will be counted as zero.', 'E - Excused absence, grade will not be counted.', 'U - Unexcused absence, grade will be counted as zero.', 'I - Incomplete, grade will not be counted.'].map((item) => (
+                  <p key={item}>{item}</p>
+                ))}
+              </div>
+            </div>
+            <div className={panelClass}>
+              <h4 className="font-bold text-kcs-blue-900 dark:text-white">Grading scale</h4>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">
+                {gradingScaleRows.map(([from, to, letter]) => (
+                  <p key={`${from}-${to}-${letter}`}>{from} to {to} gets <span className="font-bold text-kcs-blue-900 dark:text-white">{letter}</span></p>
+                ))}
+              </div>
             </div>
           </div>
         </div>
