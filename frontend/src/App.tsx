@@ -241,7 +241,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {['students', 'teachers', 'courses', 'admissions', 'finance', 'reports', 'news', 'media', 'analytics', 'settings'].map((segment) => (
+        {['students', 'teachers', 'courses', 'admissions', 'finance', 'reports', 'news', 'media', 'analytics', 'settings', 'transcripts', 'communications', 'staff-attendance', 'discipline'].map((segment) => (
           <Route
             key={segment}
             path={`/admin/${segment}`}
