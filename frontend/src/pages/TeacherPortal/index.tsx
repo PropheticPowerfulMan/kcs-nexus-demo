@@ -139,6 +139,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const [courseTab, setCourseTab] = useState<'setup' | 'enrollment'>('setup')
   const [courseSearch, setCourseSearch] = useState('')
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
+  const [selectedEnrollmentCourseId, setSelectedEnrollmentCourseId] = useState(subjects[0].id)
   const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
   const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
   const [assignmentList, setAssignmentList] = useState(() => ecosystemAssignments)
@@ -349,6 +350,8 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const deleteCourse = (courseId: string) => {
     const course = courses.find((item) => item.id === courseId)
     setCourses((current) => current.filter((item) => item.id !== courseId))
+    if (editingCourseId === courseId) resetCourseDraft()
+    if (selectedEnrollmentCourseId === courseId) setSelectedEnrollmentCourseId(courses.find((item) => item.id !== courseId)?.id ?? '')
     runAction(`${course?.name ?? 'Subject'} removed from this teacher workspace.`)
   }
 
@@ -356,6 +359,17 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     const searchable = `${course.gradeLevels.join(' ')} ${course.name} ${course.abbreviation} ${course.room}`.toLowerCase()
     return searchable.includes(courseSearch.toLowerCase())
   })
+  const selectedEnrollmentCourse = courses.find((course) => course.id === selectedEnrollmentCourseId) ?? courses[0]
+  const totalEnrollment = courses.reduce((sum, course) => sum + course.studentIds.length, 0)
+  const totalCreditHours = courses.reduce((sum, course) => sum + course.creditHours, 0)
+  const coveredGrades = Array.from(new Set(courses.flatMap((course) => course.gradeLevels))).length
+
+  const openCourseEnrollment = (courseId: string) => {
+    const course = courses.find((item) => item.id === courseId)
+    setSelectedEnrollmentCourseId(courseId)
+    setCourseTab('enrollment')
+    runAction(`${course?.name ?? 'Subject'} enrollment opened.`)
+  }
 
   const importStudent = () => {
     const student = findStudent(selectedStudentId)
@@ -473,6 +487,20 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                   ))}
                 </div>
               </div>
+              <div className="mt-5 grid gap-3 pb-5 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { label: 'Subjects', value: courses.length, sub: 'active workspace' },
+                  { label: 'Enrollment', value: totalEnrollment, sub: 'student seats' },
+                  { label: 'Credit Hours', value: totalCreditHours, sub: 'teaching load' },
+                  { label: 'Grade Coverage', value: coveredGrades, sub: 'grade levels' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-xl bg-gray-50 px-4 py-3 dark:bg-kcs-blue-800/30">
+                    <p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{item.value}</p>
+                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">{item.label}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{item.sub}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {courseTab === 'setup' && (
@@ -509,13 +537,15 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Which grades do you teach the subject for?</p>
-                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <div className="mt-2 rounded-xl border border-gray-100 bg-white p-3 dark:border-kcs-blue-800 dark:bg-kcs-blue-950/30">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
                         {gradeOptions.map((grade) => (
-                          <label key={grade} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${courseDraft.gradeLevels.includes(grade) ? 'border-kcs-blue-300 bg-kcs-blue-50 text-kcs-blue-800 dark:border-kcs-blue-600 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-100' : 'border-gray-200 bg-white text-gray-600 dark:border-kcs-blue-800 dark:bg-kcs-blue-950/40 dark:text-gray-300'}`}>
-                            <input type="checkbox" checked={courseDraft.gradeLevels.includes(grade)} onChange={() => toggleCourseGrade(grade)} />
-                            {grade}
+                          <label key={grade} className="flex min-w-0 items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                            <input className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-kcs-blue-700 focus:ring-kcs-blue-500" type="checkbox" checked={courseDraft.gradeLevels.includes(grade)} onChange={() => toggleCourseGrade(grade)} />
+                            <span className="min-w-0 break-words leading-snug">{grade}</span>
                           </label>
                         ))}
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -552,9 +582,21 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                             <td className="px-3 py-3 font-semibold text-kcs-blue-900 dark:text-white">{subject.name}</td>
                             <td className="px-3 py-3">{subject.abbreviation}</td>
                             <td className="px-3 py-3">{subject.creditHours}</td>
-                            <td className="px-3 py-3">{subject.studentIds.length}</td>
-                            <td className="px-3 py-3"><button onClick={() => editCourse(subject.id)} className="text-xs font-bold text-kcs-blue-600 hover:text-kcs-blue-800 dark:text-kcs-blue-300">Edit</button></td>
-                            <td className="px-3 py-3"><button onClick={() => deleteCourse(subject.id)} className="text-xs font-bold text-red-600 hover:text-red-700">Delete</button></td>
+                            <td className="px-3 py-3">
+                              <button onClick={() => openCourseEnrollment(subject.id)} className="rounded-full bg-kcs-blue-50 px-3 py-1 text-xs font-bold text-kcs-blue-700 transition-colors hover:bg-kcs-blue-700 hover:text-white dark:bg-kcs-blue-900/40 dark:text-kcs-blue-200">
+                                {subject.studentIds.length} enrolled
+                              </button>
+                            </td>
+                            <td className="px-3 py-3">
+                              <button onClick={() => editCourse(subject.id)} className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700 transition-colors hover:bg-kcs-blue-100 hover:text-kcs-blue-800 dark:bg-kcs-blue-800/40 dark:text-gray-200">
+                                Edit
+                              </button>
+                            </td>
+                            <td className="px-3 py-3">
+                              <button onClick={() => deleteCourse(subject.id)} className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-600 transition-colors hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-300">
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -566,8 +608,22 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
             {courseTab === 'enrollment' && (
               <div className="grid gap-4 p-5 lg:grid-cols-2">
+                {selectedEnrollmentCourse && (
+                  <div className="lg:col-span-2 rounded-xl border border-kcs-blue-100 bg-kcs-blue-50 p-4 dark:border-kcs-blue-700 dark:bg-kcs-blue-900/30">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-kcs-blue-500">Selected subject enrollment</p>
+                        <h4 className="font-bold text-kcs-blue-900 dark:text-white">{selectedEnrollmentCourse.name}</h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">{selectedEnrollmentCourse.gradeLevels.join(', ')} - {selectedEnrollmentCourse.studentIds.length} enrolled - {superAdminStudentPool.length - selectedEnrollmentCourse.studentIds.length} available</p>
+                      </div>
+                      <button onClick={() => editCourse(selectedEnrollmentCourse.id)} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-kcs-blue-700 shadow-sm hover:bg-kcs-blue-100 dark:bg-kcs-blue-950 dark:text-kcs-blue-200">
+                        Edit selected subject
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {courses.map((subject) => (
-                  <div key={subject.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                  <div key={subject.id} className={`rounded-xl border p-4 ${selectedEnrollmentCourse?.id === subject.id ? 'border-kcs-blue-300 bg-white shadow-sm dark:border-kcs-blue-600 dark:bg-kcs-blue-900/40' : 'border-gray-100 bg-gray-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.gradeLevels.join(', ')}</p>
