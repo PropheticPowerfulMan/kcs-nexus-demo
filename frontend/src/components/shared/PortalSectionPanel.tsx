@@ -176,6 +176,14 @@ const sectionMap: Record<string, SectionConfig> = {
     secondaryAction: 'Export data',
     items: ['School-wide attendance summary', 'Admission statistics', 'Parent engagement report'],
   },
+  finance: {
+    title: 'Fee Tracking & Payments',
+    description: 'Track invoices, balances, receipts, payment status, parent obligations, exports, and future mobile money or card integration.',
+    icon: FileText,
+    primaryAction: 'Create invoice',
+    secondaryAction: 'Export finance report',
+    items: ['Kabongo Family - partial balance', 'Mbuyi Family - payment pending', 'Mobile money integration prepared'],
+  },
   permissions: {
     title: 'Staff Permissions',
     description: 'Review allowed operations for office functions and sensitive workflows requiring approval.',

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import {
-  AlertTriangle, ArrowUpRight, BookOpen, Brain, Building2,
-  CheckCircle2, Clock3, FileText, GraduationCap, Users
+  ArrowUpRight, BookOpen, Brain,
+  Clock3, FileText, GraduationCap, Radio, Users, Video
 } from 'lucide-react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer,
@@ -10,7 +10,21 @@ import {
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
-import { aiSignals, auditLogs, rolePermissions, staffOperations, students } from '@/data/schoolEcosystem'
+import {
+  aiRecommendations,
+  aiSignals,
+  auditLogs,
+  communicationFlows,
+  feeAccounts,
+  financeReadiness,
+  reportCards,
+  rolePermissions,
+  scheduleConflicts,
+  sensitiveActions,
+  staffOperations,
+  students,
+  transcripts,
+} from '@/data/schoolEcosystem'
 
 const enrollmentTrend = [
   { month: 'Sep', students: 472, applications: 68 },
@@ -58,6 +72,12 @@ const recentActivity = [
   'News post on science fair produced 1,240 page views in 48 hours.',
 ]
 
+const liveEventControls = [
+  { title: 'Spring Arts Festival', status: 'Live now', platform: 'YouTube Live', audience: '312 viewers', nextStep: 'Monitor comments and stream health' },
+  { title: 'Annual Sports Day', status: 'Scheduled', platform: 'KCS Live', audience: 'May 10, 8:00 AM', nextStep: 'Confirm camera crew and field audio' },
+  { title: 'Graduation Ceremony 2026', status: 'Scheduled', platform: 'YouTube Live', audience: 'Jun 8, 4:00 PM', nextStep: 'Publish family access link' },
+]
+
 const AdminDashboard = () => {
   const { user } = useAuthStore()
 
@@ -91,7 +111,7 @@ const AdminDashboard = () => {
               { label: 'Faculty Members', value: '64', icon: Users, tone: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300', sub: '92% retention' },
               { label: 'Open Applications', value: '102', icon: FileText, tone: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', sub: '31 priority cases' },
               { label: 'AI Risk Alerts', value: '10', icon: Brain, tone: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', sub: '3 high severity' },
-              { label: 'Campus Utilization', value: '87%', icon: Building2, tone: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', sub: 'Room scheduling' },
+              { label: 'Live Events', value: '4', icon: Radio, tone: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', sub: '1 currently live' },
             ].map((item) => {
               const Icon = item.icon
               return (
@@ -158,6 +178,27 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Event Live Broadcasts</h2>
+                <Video size={18} className="text-red-500" />
+              </div>
+              <div className="space-y-3">
+                {liveEventControls.map((event) => (
+                  <div key={event.title} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{event.title}</p>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${event.status === 'Live now' ? 'bg-red-600 text-white' : 'bg-kcs-gold-100 text-kcs-blue-800 dark:bg-kcs-gold-900/30 dark:text-kcs-gold-300'}`}>
+                        {event.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{event.platform} • {event.audience}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{event.nextStep}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="font-bold text-kcs-blue-900 dark:text-white">Admissions Queue</h2>
@@ -289,6 +330,102 @@ const AdminDashboard = () => {
 
           <div className="grid gap-6 xl:grid-cols-3">
             <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Sensitive Action Approvals</h2>
+                <span className="badge-gold text-xs">Super Admin only</span>
+              </div>
+              <div className="space-y-3">
+                {sensitiveActions.map((item) => (
+                  <div key={item.action} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.action}</p>
+                      <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">{item.risk}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.requester}</p>
+                    <p className="mt-2 text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{item.status}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Finance Control</h2>
+                <span className="badge-blue text-xs">Invoices • receipts • exports</span>
+              </div>
+              <div className="space-y-3">
+                {feeAccounts.map((fee) => (
+                  <div key={fee.invoice} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{fee.invoice}</p>
+                      <span className="text-sm font-bold text-kcs-blue-700 dark:text-kcs-blue-300">${fee.balance}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{fee.family} • {fee.status} • last payment ${fee.lastPayment}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Report Cards & Transcripts</h2>
+                <span className="badge-gold text-xs">Principal workflow</span>
+              </div>
+              <div className="space-y-3">
+                {[...reportCards, ...transcripts].map((item: any) => (
+                  <div key={`${item.student}-${item.term ?? item.years}`} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.student}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {item.term ?? item.years} • {item.principalStatus ?? item.status}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Interdependence Engine</h2>
+                <span className="badge-blue text-xs">Notifications and RBAC</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {communicationFlows.map((flow) => (
+                  <div key={flow.trigger} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{flow.trigger}</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{flow.update}</p>
+                    <p className="mt-2 text-xs text-gray-400">Recipients: {flow.recipients.join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">AI Governance</h2>
+                <span className="badge-gold text-xs">Usage and recommendations</span>
+              </div>
+              <div className="space-y-3">
+                {aiRecommendations.map((item) => (
+                  <div key={`${item.owner}-${item.title}`} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.owner}: {item.title}</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{item.action}</p>
+                    <p className="mt-2 text-xs font-semibold text-kcs-gold-600 dark:text-kcs-gold-300">{item.impact}</p>
+                  </div>
+                ))}
+                {financeReadiness.slice(1).map((item) => (
+                  <div key={item.feature} className="rounded-xl border border-green-100 bg-green-50 p-4 dark:border-green-900/30 dark:bg-green-900/10">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-300">{item.feature}</p>
+                    <p className="mt-1 text-xs text-green-700 dark:text-green-400">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Student Risk Control</h2>
               <div className="space-y-3">
                 {students.map((student) => (
@@ -329,6 +466,25 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Schedule Conflict Control</h2>
+              <span className="badge-blue text-xs">Teacher • room • class timetable</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {scheduleConflicts.map((conflict) => (
+                <div key={conflict.title} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{conflict.title}</p>
+                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">{conflict.severity}</span>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{conflict.detail}</p>
+                  <p className="mt-2 text-xs text-gray-400">Notify: {conflict.affected.join(', ')}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

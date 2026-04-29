@@ -70,6 +70,23 @@ enum MediaType {
   VIDEO
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  SICK
+  SUSPENDED
+}
+
+enum FeeStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+}
+
 model User {
   id                 String               @id @default(cuid())
   email              String               @unique
@@ -99,6 +116,10 @@ model User {
   aiStudentForumReports AIStudentForumReport[] @relation("AIStudentForumReportReviewer")
   auditLogs          AuditLog[]            @relation("AuditActor")
   staffProfile       StaffProfile?
+  attendanceRecorded AttendanceRecord[]    @relation("AttendanceRecorder")
+  sentMessages        InternalMessage[]     @relation("MessageSender")
+  receivedMessages    InternalMessage[]     @relation("MessageRecipient")
+  approvedReportCards ReportCard[]          @relation("ReportCardApprover")
 }
 
 model StaffProfile {
@@ -153,6 +174,10 @@ model StudentProfile {
   submissions        AssignmentSubmission[]
   aiSessions         AITutorSession[]
   aiRecommendations  AIRecommendation[]
+  attendanceRecords  AttendanceRecord[]
+  reportCards        ReportCard[]
+  transcripts        Transcript[]
+  feeInvoices        FeeInvoice[]
 }
 
 model ParentStudentLink {
@@ -288,8 +313,110 @@ model Event {
   coverImage            String?
   registrationRequired  Boolean   @default(false)
   maxAttendees          Int?
+  liveStreamEnabled     Boolean   @default(false)
+  liveStreamUrl         String?
+  liveStreamPlatform    String?
+  liveStreamStatus      String    @default("scheduled")
+  liveStreamStartsAt    DateTime?
+  replayUrl             String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  studentId   String
+  recordedById String?
+  date        DateTime
+  className   String
+  period      String?
+  subject     String?
+  status      AttendanceStatus
+  note        String?
+  notifiedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  student     StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy  User?            @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([status])
+  @@unique([studentId, date, className, period])
+}
+
+model InternalMessage {
+  id          String   @id @default(cuid())
+  senderId    String?
+  recipientId String?
+  subject     String
+  body        String
+  targetRole  UserRole?
+  readAt      DateTime?
+  priority    String   @default("normal")
+  createdAt   DateTime @default(now())
+  sender      User?    @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  recipient   User?    @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([targetRole])
+  @@index([createdAt])
+}
+
+model ReportCard {
+  id                String         @id @default(cuid())
+  studentId         String
+  term              String
+  average           Float
+  conduct           String?
+  teacherComment    String?
+  principalStatus   String         @default("DRAFT")
+  approvedById      String?
+  approvedAt        DateTime?
+  pdfUrl            String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  student           StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  approvedBy        User?          @relation("ReportCardApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, term])
+}
+
+model Transcript {
+  id             String         @id @default(cuid())
+  studentId      String
+  academicYears  String
+  credits        Float
+  cumulativeGpa  Float
+  status         String         @default("IN_PROGRESS")
+  pdfUrl         String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  student        StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model FeeInvoice {
+  id          String       @id @default(cuid())
+  studentId   String
+  invoiceNo   String       @unique
+  amount      Float
+  balance     Float
+  status      FeeStatus    @default(PENDING)
+  dueDate     DateTime
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments    FeePayment[]
+}
+
+model FeePayment {
+  id          String     @id @default(cuid())
+  invoiceId   String
+  amount      Float
+  method      String
+  reference   String?
+  paidAt      DateTime   @default(now())
+  receiptUrl  String?
+  invoice     FeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model AdmissionApplication {

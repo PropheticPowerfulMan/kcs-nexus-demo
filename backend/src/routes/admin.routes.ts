@@ -8,13 +8,14 @@ export const adminRouter = Router()
 adminRouter.use(authenticate, requireRoles('admin'))
 
 adminRouter.get('/stats', asyncHandler(async (_req, res) => {
-  const [students, teachers, applications, media, news, events] = await Promise.all([
+  const [students, teachers, applications, media, news, events, liveEvents] = await Promise.all([
     prisma.studentProfile.count(),
     prisma.teacherProfile.count(),
     prisma.admissionApplication.count({ where: { status: 'SUBMITTED' } }),
     prisma.mediaItem.count(),
     prisma.newsPost.count(),
     prisma.event.count(),
+    prisma.event.count({ where: { liveStreamEnabled: true } }),
   ])
 
   return success(res, {
@@ -24,6 +25,7 @@ adminRouter.get('/stats', asyncHandler(async (_req, res) => {
     mediaItems: media,
     publishedNews: news,
     scheduledEvents: events,
+    liveEvents,
   })
 }))
 

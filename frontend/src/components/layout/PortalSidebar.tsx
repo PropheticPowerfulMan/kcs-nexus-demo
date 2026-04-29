@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
   Users, Settings, Bell, ChevronLeft, ChevronRight,
   GraduationCap, BarChart3, MessageSquare, LogOut,
-  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet
+  Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet, WalletCards
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -44,6 +44,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/portal/parent/forum', label: 'Parent Forum', icon: MessageSquare },
         { to: '/portal/parent/messages', label: 'Messages', icon: MessageSquare },
         { to: '/portal/parent/calendar', label: 'Calendar', icon: Calendar },
+        { to: '/portal/parent/finance', label: 'Fees', icon: WalletCards },
         { to: '/portal/parent/profile', label: 'Profile', icon: UserCheck },
       ]
     case 'teacher':
@@ -53,6 +54,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/portal/teacher/students', label: 'Students', icon: Users },
         { to: '/portal/teacher/assignments', label: 'Assignments', icon: FileText },
         { to: '/portal/teacher/grades', label: 'Grade Book', icon: BarChart3 },
+        { to: '/portal/teacher/reports', label: 'Reports', icon: FileSpreadsheet },
         { to: '/portal/teacher/messages', label: 'Messages', icon: MessageSquare },
       ]
     case 'staff':
@@ -62,6 +64,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/portal/staff/admissions', label: 'Admissions', icon: ClipboardList },
         { to: '/portal/staff/announcements', label: 'Announcements', icon: Megaphone },
         { to: '/portal/staff/reports', label: 'Reports', icon: FileSpreadsheet },
+        { to: '/portal/staff/finance', label: 'Fee Tracking', icon: WalletCards },
         { to: '/portal/staff/messages', label: 'Messages', icon: MessageSquare, badge: 12 },
         { to: '/portal/staff/permissions', label: 'Permissions', icon: Shield },
       ]
@@ -73,6 +76,8 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
         { to: '/admin/teachers', label: 'Teachers', icon: Users },
         { to: '/admin/courses', label: 'Courses', icon: BookOpen },
         { to: '/admin/admissions', label: 'Admissions', icon: ClipboardList },
+        { to: '/admin/finance', label: 'Finance', icon: WalletCards },
+        { to: '/admin/reports', label: 'Reports', icon: FileSpreadsheet },
         { to: '/admin/news', label: 'News & Events', icon: FileText },
         { to: '/admin/media', label: 'Media', icon: Image },
         { to: '/admin/forum-insights', label: 'Parent AI Report', icon: Brain },

@@ -12,7 +12,8 @@ import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import {
   academicContext, aiSignals, announcements, auditLogs,
-  messages, rolePermissions, staffOperations
+  communicationFlows, feeAccounts, financeReadiness, messages,
+  reportCards, rolePermissions, scheduleConflicts, staffOperations
 } from '@/data/schoolEcosystem'
 
 const attendanceSummary = [
@@ -158,6 +159,85 @@ const StaffPortal = () => {
                       <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">{signal.severity}</span>
                     </div>
                     <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{signal.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Fee Tracking</h2>
+              <div className="space-y-3">
+                {feeAccounts.map((fee) => (
+                  <div key={fee.invoice} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{fee.family}</p>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${fee.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                        {fee.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{fee.student} • balance ${fee.balance} • {fee.invoice}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Report Card Workflow</h2>
+              <div className="space-y-3">
+                {reportCards.map((card) => (
+                  <div key={card.student} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{card.student}</p>
+                      <span className="text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{card.principalStatus}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{card.term} • {card.download}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Schedule Conflicts</h2>
+              <div className="space-y-3">
+                {scheduleConflicts.map((conflict) => (
+                  <div key={conflict.title} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{conflict.title}</p>
+                      <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">{conflict.severity}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{conflict.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Cross-module Notifications</h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                {communicationFlows.map((flow) => (
+                  <div key={flow.trigger} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{flow.trigger}</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{flow.update}</p>
+                    <p className="mt-2 text-xs font-semibold text-kcs-gold-600 dark:text-kcs-gold-300">{flow.notification}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Payment Integration Readiness</h2>
+              <div className="space-y-3">
+                {financeReadiness.map((item) => (
+                  <div key={item.feature} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.feature}</p>
+                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-300">{item.status}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{item.note}</p>
                   </div>
                 ))}
               </div>

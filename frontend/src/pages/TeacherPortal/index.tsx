@@ -9,10 +9,15 @@ import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import {
   aiSignals,
+  aiRecommendations,
   assignments as ecosystemAssignments,
   attendance as ecosystemAttendance,
   grades as ecosystemGrades,
+  gradebookCategories,
+  gradingScales,
+  lmsResources,
   messages as ecosystemMessages,
+  reportCards,
   schedules as ecosystemSchedules,
   students as ecosystemStudents,
 } from '@/data/schoolEcosystem'
@@ -177,6 +182,78 @@ const TeacherPortal = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Gradebook Categories</h2>
+              <div className="space-y-3">
+                {gradebookCategories.map((category) => (
+                  <div key={category.name} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{category.name}</p>
+                      <span className="text-xs font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{category.weight}%</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-kcs-blue-900">
+                      <div className="h-full rounded-full bg-kcs-blue-600" style={{ width: `${category.average}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{category.visibility}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">LMS Resources</h2>
+              <div className="space-y-3">
+                {lmsResources.map((resource) => (
+                  <div key={resource.title} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{resource.title}</p>
+                      <span className="rounded-full bg-kcs-gold-100 px-2 py-1 text-xs font-semibold capitalize text-kcs-blue-800 dark:bg-kcs-gold-900/30 dark:text-kcs-gold-300">{resource.type}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{resource.subject} • {resource.status}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">AI Report Comments</h2>
+              <div className="space-y-3">
+                {reportCards.map((card) => (
+                  <div key={card.student} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{card.student}</p>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{card.principalStatus}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{card.teacherComment}</p>
+                  </div>
+                ))}
+                {aiRecommendations.filter((item) => item.owner === 'Teacher').map((item) => (
+                  <div key={item.title} className="rounded-xl border border-kcs-blue-200 bg-kcs-blue-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{item.action}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Custom Grading Scale</h2>
+              <span className="badge-blue text-xs">Export PDF • Excel • CSV</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-4">
+              {gradingScales.map((scale) => (
+                <div key={scale.letter} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{scale.letter}</p>
+                  <p className="text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{scale.range} • GPA {scale.gpa.toFixed(1)}</p>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{scale.descriptor}</p>
+                </div>
+              ))}
             </div>
           </div>
 

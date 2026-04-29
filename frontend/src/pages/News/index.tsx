@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
-import { Calendar, ArrowRight, Search, Tag, Clock, Eye } from 'lucide-react'
+import { Calendar, ArrowRight, Search, Clock, Eye, PlayCircle, Radio, Video } from 'lucide-react'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -90,13 +90,37 @@ const allPosts = [
 ]
 
 const upcomingEvents = [
-  { date: 'Apr 28', title: 'Spring Arts Festival', time: '6:00 PM', location: 'KCS Auditorium', type: 'cultural' },
-  { date: 'May 2', title: 'AP Exams Begin', time: '8:00 AM', location: 'Testing Center', type: 'academic' },
-  { date: 'May 10', title: 'Annual Sports Day', time: '8:00 AM', location: 'Main Field', type: 'sports' },
-  { date: 'May 20', title: 'Parent-Teacher Conference', time: '1:00 PM', location: 'Classrooms', type: 'academic' },
-  { date: 'Jun 5', title: 'Baccalaureate Service', time: '10:00 AM', location: 'School Chapel', type: 'spiritual' },
-  { date: 'Jun 8', title: 'Graduation Ceremony 2026', time: '4:00 PM', location: 'KCS Auditorium', type: 'academic' },
+  {
+    date: 'Apr 28',
+    title: 'Spring Arts Festival',
+    time: '6:00 PM',
+    location: 'KCS Auditorium',
+    type: 'cultural',
+    liveStreamEnabled: true,
+    liveStreamStatus: 'live',
+    liveStreamPlatform: 'YouTube Live',
+    liveStreamUrl: 'https://www.youtube.com/@kinshasachristianschool',
+    coverImage: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=900&q=80',
+  },
+  { date: 'May 2', title: 'AP Exams Begin', time: '8:00 AM', location: 'Testing Center', type: 'academic', liveStreamEnabled: false },
+  {
+    date: 'May 10',
+    title: 'Annual Sports Day',
+    time: '8:00 AM',
+    location: 'Main Field',
+    type: 'sports',
+    liveStreamEnabled: true,
+    liveStreamStatus: 'scheduled',
+    liveStreamPlatform: 'KCS Live',
+    liveStreamUrl: 'https://www.youtube.com/@kinshasachristianschool',
+    coverImage: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=900&q=80',
+  },
+  { date: 'May 20', title: 'Parent-Teacher Conference', time: '1:00 PM', location: 'Classrooms', type: 'academic', liveStreamEnabled: true, liveStreamStatus: 'scheduled', liveStreamPlatform: 'Zoom Webinar', liveStreamUrl: 'https://zoom.us/' },
+  { date: 'Jun 5', title: 'Baccalaureate Service', time: '10:00 AM', location: 'School Chapel', type: 'spiritual', liveStreamEnabled: true, liveStreamStatus: 'scheduled', liveStreamPlatform: 'YouTube Live', liveStreamUrl: 'https://www.youtube.com/@kinshasachristianschool' },
+  { date: 'Jun 8', title: 'Graduation Ceremony 2026', time: '4:00 PM', location: 'KCS Auditorium', type: 'academic', liveStreamEnabled: true, liveStreamStatus: 'scheduled', liveStreamPlatform: 'YouTube Live', liveStreamUrl: 'https://www.youtube.com/@kinshasachristianschool' },
 ]
+
+const liveBroadcasts = upcomingEvents.filter((event) => event.liveStreamEnabled)
 
 const categories = ['all', 'news', 'event', 'announcement', 'achievement']
 
@@ -113,6 +137,13 @@ const eventTypeColors: Record<string, string> = {
   academic: 'bg-kcs-blue-100 text-kcs-blue-700',
   sports: 'bg-green-100 text-green-700',
   spiritual: 'bg-purple-100 text-purple-700',
+}
+
+const liveStatusColors: Record<string, string> = {
+  live: 'bg-red-600 text-white',
+  scheduled: 'bg-kcs-gold-400 text-kcs-blue-950',
+  ended: 'bg-gray-700 text-white',
+  cancelled: 'bg-gray-200 text-gray-700',
 }
 
 const NewsPage = () => {
@@ -187,6 +218,71 @@ const NewsPage = () => {
       {/* FILTERS & GRID */}
       <section className="py-16 bg-white dark:bg-kcs-blue-950">
         <div className="container-custom">
+          <AnimSection className="mb-12">
+            <motion.div variants={fadeUp} className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <span className="badge-gold mb-3 inline-flex items-center gap-2 text-sm">
+                  <Radio size={14} /> Live Broadcasts
+                </span>
+                <h2 className="font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">
+                  Watch KCS Events Live
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  Families can join school ceremonies, arts showcases, sports days, chapel services, and selected meetings from anywhere.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 dark:bg-red-900/20 dark:text-red-300">
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                {liveBroadcasts.filter((event) => event.liveStreamStatus === 'live').length || 1} active channel
+              </span>
+            </motion.div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {liveBroadcasts.slice(0, 3).map((event) => (
+                <motion.article
+                  key={event.title}
+                  variants={fadeUp}
+                  className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-kcs dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50"
+                >
+                  <div className="relative h-44 overflow-hidden bg-kcs-blue-900">
+                    {event.coverImage ? (
+                      <img src={event.coverImage} alt={event.title} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Video size={42} className="text-kcs-gold-300" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-kcs-blue-950/75 to-transparent" />
+                    <div className="absolute left-3 top-3">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${liveStatusColors[event.liveStreamStatus || 'scheduled']}`}>
+                        {event.liveStreamStatus === 'live' ? 'Live now' : event.liveStreamStatus}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-xs font-semibold text-kcs-gold-300">{event.liveStreamPlatform}</p>
+                      <h3 className="mt-1 line-clamp-1 font-display text-lg font-bold text-white">{event.title}</h3>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-4 flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1.5"><Calendar size={12} /> {event.date}</span>
+                      <span>{event.time}</span>
+                    </div>
+                    <a
+                      href={event.liveStreamUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800"
+                    >
+                      <PlayCircle size={16} />
+                      {event.liveStreamStatus === 'live' ? 'Watch live' : 'Open stream'}
+                    </a>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </AnimSection>
+
           {/* Search & Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-10">
             <div className="relative flex-1 max-w-md">
@@ -293,9 +389,22 @@ const NewsPage = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-kcs-blue-900 dark:text-white text-sm truncate">{event.title}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{event.time} · {event.location}</p>
-                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium capitalize ${eventTypeColors[event.type] || 'bg-gray-100 text-gray-700'}`}>
-                              {event.type}
-                            </span>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium capitalize ${eventTypeColors[event.type] || 'bg-gray-100 text-gray-700'}`}>
+                                {event.type}
+                              </span>
+                              {event.liveStreamEnabled && (
+                                <a
+                                  href={event.liveStreamUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${liveStatusColors[event.liveStreamStatus || 'scheduled']}`}
+                                >
+                                  <Radio size={10} />
+                                  {event.liveStreamStatus === 'live' ? 'Live' : 'Stream'}
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -17,8 +17,12 @@ import {
   assignments as ecosystemAssignments,
   attendance as ecosystemAttendance,
   aiSignals,
+  aiRecommendations,
   events as ecosystemEvents,
+  feeAccounts,
   grades as ecosystemGrades,
+  internalThreads,
+  reportCards,
   students as ecosystemStudents,
 } from '@/data/schoolEcosystem'
 
@@ -286,6 +290,64 @@ const ParentPortal = () => {
                   <div key={item.id ?? item.title} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
                     <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{item.due ?? item.date} • {item.subject ?? item.type}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Fee Obligations</h2>
+              <div className="space-y-3">
+                {feeAccounts.filter((fee) => fee.family === 'Kabongo Family').map((fee) => (
+                  <div key={fee.invoice} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-kcs-blue-900 dark:text-white">{fee.student}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{fee.invoice} • due {fee.dueDate}</p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${fee.balance === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+                        ${fee.balance}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Report Cards</h2>
+              <div className="space-y-3">
+                {reportCards.map((card) => (
+                  <div key={card.student} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{card.student}</p>
+                      <span className="text-sm font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{card.average}%</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{card.term} • {card.principalStatus} • {card.download}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{card.teacherComment}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Private Communication</h2>
+              <div className="space-y-3">
+                {internalThreads.filter((thread) => thread.participants.includes('Rachel Kabongo')).map((thread) => (
+                  <div key={thread.subject} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{thread.subject}</p>
+                      <span className="rounded-full bg-kcs-blue-100 px-2 py-1 text-xs font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">{thread.unread} unread</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{thread.channel}</p>
+                  </div>
+                ))}
+                {aiRecommendations.filter((item) => item.owner === 'Parent').map((item) => (
+                  <div key={item.title} className="rounded-xl border border-kcs-gold-200 bg-kcs-gold-50 p-4 dark:border-kcs-gold-900/40 dark:bg-kcs-gold-900/10">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{item.title}</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{item.action}</p>
                   </div>
                 ))}
               </div>

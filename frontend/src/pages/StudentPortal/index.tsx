@@ -16,9 +16,14 @@ import {
   academicContext,
   announcements as ecosystemAnnouncements,
   assignments as ecosystemAssignments,
+  attendanceAnalytics,
   events as ecosystemEvents,
   grades as ecosystemGrades,
+  internalThreads,
+  lmsResources,
+  reportCards,
   students as ecosystemStudents,
+  transcripts,
 } from '@/data/schoolEcosystem'
 
 const performanceData = [
@@ -210,6 +215,54 @@ const StudentPortal = () => {
             </div>
           </div>
 
+          <div className="grid gap-6 lg:grid-cols-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Report Card</h2>
+              {reportCards.filter((card) => card.student === 'Elise Kabongo').map((card) => (
+                <div key={card.student} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <p className="font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">{card.average}%</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{card.term} • {card.principalStatus}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{card.teacherComment}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Transcript</h2>
+              {transcripts.filter((item) => item.student === 'Elise Kabongo').map((item) => (
+                <div key={item.student} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.years}</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.credits} credits • GPA {item.cumulativeGpa}</p>
+                  <p className="mt-2 text-xs font-semibold text-green-600 dark:text-green-300">{item.status}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Learning Resources</h2>
+              <div className="space-y-3">
+                {lmsResources.filter((item) => item.audience.includes('student')).slice(0, 2).map((resource) => (
+                  <div key={resource.title} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{resource.title}</p>
+                    <p className="text-xs capitalize text-gray-500 dark:text-gray-400">{resource.type} • {resource.subject}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h2 className="mb-4 font-bold text-kcs-blue-900 dark:text-white">Messages</h2>
+              <div className="space-y-3">
+                {internalThreads.filter((thread) => thread.participants.includes('Rachel Kabongo') || thread.participants.includes('Administration')).slice(0, 2).map((thread) => (
+                  <div key={thread.subject} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <p className="text-sm font-semibold text-kcs-blue-900 dark:text-white">{thread.subject}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{thread.channel} • {thread.unread} unread</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Performance Chart */}
             <div className="lg:col-span-2 bg-white dark:bg-kcs-blue-900/50 rounded-2xl p-6 border border-gray-100 dark:border-kcs-blue-800">
@@ -359,6 +412,22 @@ const StudentPortal = () => {
                       Current
                     </span>
                   )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Attendance Analytics</h2>
+              <span className="badge-gold text-xs">Visible to parents and staff</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {attendanceAnalytics.map((item) => (
+                <div key={item.scope} className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <p className="font-semibold text-kcs-blue-900 dark:text-white">{item.scope}</p>
+                  <p className="mt-2 text-2xl font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{item.present}%</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{item.late}% late • {item.absent}% absent • {item.trend}</p>
                 </div>
               ))}
             </div>

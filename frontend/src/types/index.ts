@@ -151,6 +151,12 @@ export interface Event {
   coverImage?: string;
   registrationRequired: boolean;
   maxAttendees?: number;
+  liveStreamEnabled?: boolean;
+  liveStreamUrl?: string;
+  liveStreamPlatform?: string;
+  liveStreamStatus?: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  liveStreamStartsAt?: string;
+  replayUrl?: string;
 }
 
 // --- Admission ---

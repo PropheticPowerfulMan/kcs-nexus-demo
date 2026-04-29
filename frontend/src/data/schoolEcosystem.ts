@@ -65,10 +65,31 @@ export const grades = [
   { studentId: 'stu-david', subject: 'World Geography', assessment: 'Map Quiz', score: 88, max: 100, date: 'Apr 14', teacher: 'Mrs. Nkosi' },
 ]
 
+export const gradebookCategories = [
+  { name: 'Homework', weight: 15, average: 86, visibility: 'Parents and students' },
+  { name: 'Quizzes', weight: 20, average: 88, visibility: 'Parents and students' },
+  { name: 'Tests', weight: 25, average: 84, visibility: 'Parents and students after teacher release' },
+  { name: 'Exams', weight: 30, average: 91, visibility: 'Term report only until approved' },
+  { name: 'Participation', weight: 10, average: 94, visibility: 'Teacher and admin' },
+]
+
+export const gradingScales = [
+  { letter: 'A', range: '90-100', gpa: 4.0, descriptor: 'Excellent mastery' },
+  { letter: 'B', range: '80-89', gpa: 3.0, descriptor: 'Strong progress' },
+  { letter: 'C', range: '70-79', gpa: 2.0, descriptor: 'Developing mastery' },
+  { letter: 'D', range: '60-69', gpa: 1.0, descriptor: 'Intervention required' },
+]
+
 export const attendance = [
   { studentId: 'stu-elise', date: 'Apr 22', status: 'present', className: 'Grade 11A' },
   { studentId: 'stu-david', date: 'Apr 22', status: 'late', className: 'Grade 8B' },
   { studentId: 'stu-david', date: 'Apr 19', status: 'absent', className: 'Grade 8B' },
+]
+
+export const attendanceAnalytics = [
+  { scope: 'Grade 11A', present: 96, late: 3, absent: 1, trend: 'stable' },
+  { scope: 'Grade 8B', present: 89, late: 7, absent: 4, trend: 'needs follow-up' },
+  { scope: 'High School', present: 94, late: 4, absent: 2, trend: 'improving' },
 ]
 
 export const assignments = [
@@ -78,6 +99,12 @@ export const assignments = [
   { id: 'asg-4', studentId: 'stu-david', title: 'Geography Map Corrections', subject: 'World Geography', due: 'Apr 25', status: 'pending', priority: 'medium' },
 ]
 
+export const lmsResources = [
+  { title: 'AP Biology meiosis explainer', type: 'video', subject: 'AP Biology', audience: ['student', 'parent'], status: 'published' },
+  { title: 'Fraction fluency worksheet', type: 'file', subject: 'Pre-Algebra', audience: ['student', 'parent'], status: 'assigned' },
+  { title: 'Exam revision discussion', type: 'discussion', subject: 'AP Calculus', audience: ['student'], status: 'open' },
+]
+
 export const schedules = [
   { role: 'student', ownerId: 'stu-elise', time: '8:15 AM', title: 'AP Calculus', room: 'Room 204', teacher: 'Mr. Belanger' },
   { role: 'student', ownerId: 'stu-elise', time: '10:15 AM', title: 'AP Biology', room: 'Lab 3', teacher: 'Dr. Mukendi' },
@@ -85,10 +112,23 @@ export const schedules = [
   { role: 'teacher', ownerId: 'teacher-belanger', time: '11:00 AM', title: 'Grade 8 Pre-Algebra', room: 'Room 202', teacher: 'Mr. Belanger' },
 ]
 
+export const scheduleConflicts = [
+  { title: 'Room 204 double-booking risk', detail: 'AP Calculus and Grade 10 Biology overlap on Friday period 2.', severity: 'medium', affected: ['teacher', 'staff', 'admin'] },
+  { title: 'AP exam timetable adjustment', detail: 'Grade 11A Biology lab must move before the AP exam window.', severity: 'high', affected: ['student', 'parent', 'teacher', 'staff'] },
+]
+
 export const announcements = [
   { id: 'ann-1', title: 'Exam schedules published', audience: ['parent', 'student', 'teacher', 'staff'], priority: 'high', date: 'Apr 22' },
   { id: 'ann-2', title: 'Parent rights and duties policy updated', audience: ['parent', 'staff', 'admin'], priority: 'medium', date: 'Apr 21' },
   { id: 'ann-3', title: 'Emergency drill on Friday', audience: ['parent', 'student', 'teacher', 'staff'], priority: 'high', date: 'Apr 20' },
+]
+
+export const communicationFlows = [
+  { trigger: 'Grade entered', update: 'Student and parent dashboard refresh', notification: 'Grade alert if score is below 75%', recipients: ['student', 'parent', 'teacher'] },
+  { trigger: 'Attendance marked late/absent', update: 'Attendance analytics and child record update', notification: 'Parent absence alert', recipients: ['parent', 'staff', 'admin'] },
+  { trigger: 'Assignment published', update: 'Student workload and parent deadlines update', notification: 'Homework due reminder', recipients: ['student', 'parent'] },
+  { trigger: 'Schedule changed', update: 'Timetable and room schedule update', notification: 'Affected user alert', recipients: ['student', 'parent', 'teacher', 'staff'] },
+  { trigger: 'Academic risk detected', update: 'AI recommendation generated', notification: 'Coordinator and family follow-up', recipients: ['parent', 'teacher', 'staff', 'admin'] },
 ]
 
 export const events = [
@@ -103,16 +143,57 @@ export const messages = [
   { from: 'Academic Coordinator', toRole: 'teacher', subject: 'Risk review', body: 'Please review students below 80% before Friday.', requiresResponse: false },
 ]
 
+export const internalThreads = [
+  { subject: 'David intervention plan', participants: ['Mr. Belanger', 'Rachel Kabongo', 'Academic Coordinator'], unread: 2, channel: 'Private teacher-parent thread' },
+  { subject: 'Emergency drill logistics', participants: ['Administration', 'Teachers', 'Staff'], unread: 0, channel: 'Targeted announcement' },
+  { subject: 'Fee balance reminder', participants: ['Finance Office', 'Rachel Kabongo'], unread: 1, channel: 'Finance message' },
+]
+
 export const aiSignals = [
   { title: 'Academic risk detected', detail: 'David Kabongo combines missing work with attendance decline.', severity: 'medium', roles: ['admin', 'staff', 'teacher', 'parent'] },
   { title: 'Schedule impact', detail: 'AP exam window affects Grade 11 parent meetings and teacher assessment deadlines.', severity: 'high', roles: ['admin', 'staff', 'teacher', 'parent', 'student'] },
   { title: 'Parent engagement opportunity', detail: 'Conference completion is 82%; communications office should send targeted reminders.', severity: 'low', roles: ['admin', 'staff'] },
 ]
 
+export const aiRecommendations = [
+  { owner: 'Parent', title: 'David math routine', action: '20 minutes of fraction practice for 14 days, then reassess.', impact: 'Reduce medium academic risk' },
+  { owner: 'Teacher', title: 'Grade 8 support group', action: 'Group David with two peers for targeted algebra practice.', impact: 'Improve homework completion' },
+  { owner: 'Staff', title: 'Attendance escalation', action: 'Send weekly attendance digest to families below 90%.', impact: 'Lower absence trend' },
+  { owner: 'Super Admin', title: 'Policy approval', action: 'Approve updated parent duties policy before publication.', impact: 'Protect sensitive workflow' },
+]
+
+export const reportCards = [
+  { student: 'Elise Kabongo', term: 'Term 3', average: 92, conduct: 'Excellent', teacherComment: 'Elise shows mature independence and high analytical skill.', principalStatus: 'Approved', download: 'PDF ready' },
+  { student: 'David Kabongo', term: 'Term 3', average: 78, conduct: 'Good', teacherComment: 'David participates well and needs consistency in homework.', principalStatus: 'Pending review', download: 'Draft' },
+]
+
+export const transcripts = [
+  { student: 'Elise Kabongo', years: '2023-2026', credits: 24, cumulativeGpa: 3.8, status: 'Ready for export' },
+  { student: 'David Kabongo', years: '2025-2026', credits: 8, cumulativeGpa: 3.1, status: 'In progress' },
+]
+
+export const feeAccounts = [
+  { family: 'Kabongo Family', student: 'Elise Kabongo', invoice: 'KCS-INV-2026-041', balance: 420, status: 'partially paid', dueDate: 'May 5', lastPayment: 600 },
+  { family: 'Kabongo Family', student: 'David Kabongo', invoice: 'KCS-INV-2026-042', balance: 0, status: 'paid', dueDate: 'May 5', lastPayment: 980 },
+  { family: 'Mbuyi Family', student: 'Amani Mbuyi', invoice: 'KCS-INV-2026-043', balance: 1120, status: 'pending', dueDate: 'May 10', lastPayment: 0 },
+]
+
+export const financeReadiness = [
+  { feature: 'Invoices and receipts', status: 'Ready', note: 'PDF-ready records for finance office and parents' },
+  { feature: 'Mobile money integration', status: 'Prepared', note: 'Architecture reserved for future provider connection' },
+  { feature: 'Card payment integration', status: 'Prepared', note: 'Payment status can sync back to parent obligations' },
+]
+
 export const auditLogs = [
   { actor: 'Super Admin', action: 'Updated parent duties policy', target: 'Parent Portal', time: 'Apr 22, 9:14 AM' },
   { actor: 'Mr. Belanger', action: 'Entered Pre-Algebra grade', target: 'David Kabongo', time: 'Apr 22, 8:40 AM' },
   { actor: 'Registrar Office', action: 'Approved admission document', target: 'Amani M.', time: 'Apr 21, 3:12 PM' },
+]
+
+export const sensitiveActions = [
+  { action: 'Publish final report cards', requester: 'Academic Coordinator', status: 'Awaiting Super Admin approval', risk: 'high' },
+  { action: 'Change grading scale', requester: 'Registrar Office', status: 'Requires audit note', risk: 'high' },
+  { action: 'Waive finance balance', requester: 'Finance Office', status: 'Rejected pending documentation', risk: 'critical' },
 ]
 
 export const staffOperations = [

@@ -15,6 +15,12 @@ const eventSchema = z.object({
   coverImage: z.string().url().optional(),
   registrationRequired: z.boolean().default(false),
   maxAttendees: z.number().optional(),
+  liveStreamEnabled: z.boolean().default(false),
+  liveStreamUrl: z.string().url().optional(),
+  liveStreamPlatform: z.string().min(2).optional(),
+  liveStreamStatus: z.enum(['scheduled', 'live', 'ended', 'cancelled']).default('scheduled'),
+  liveStreamStartsAt: z.coerce.date().optional(),
+  replayUrl: z.string().url().optional(),
 })
 
 export const eventsRouter = Router()
@@ -42,6 +48,20 @@ eventsRouter.put('/:id', authenticate, requireRoles('admin'), asyncHandler(async
   const eventId = getRouteParam(req.params.id)
   const event = await prisma.event.update({ where: { id: eventId }, data: payload })
   return success(res, event, 'Event updated')
+}))
+
+eventsRouter.patch('/:id/live-stream', authenticate, requireRoles('admin'), asyncHandler(async (req, res) => {
+  const payload = eventSchema.pick({
+    liveStreamEnabled: true,
+    liveStreamUrl: true,
+    liveStreamPlatform: true,
+    liveStreamStatus: true,
+    liveStreamStartsAt: true,
+    replayUrl: true,
+  }).partial().parse(req.body)
+  const eventId = getRouteParam(req.params.id)
+  const event = await prisma.event.update({ where: { id: eventId }, data: payload })
+  return success(res, event, 'Live stream settings updated')
 }))
 
 eventsRouter.delete('/:id', authenticate, requireRoles('admin'), asyncHandler(async (req, res) => {
