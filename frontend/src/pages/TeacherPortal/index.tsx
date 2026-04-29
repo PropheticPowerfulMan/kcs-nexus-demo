@@ -63,6 +63,17 @@ const statusTone = (value: string) => {
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
 }
 
+const gradeOptions = ['K4', 'K3', 'K5', 'Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade']
+
+const inferGradeLabel = (className: string) => {
+  if (className.includes('12')) return '12th Grade'
+  if (className.includes('11')) return '11th Grade'
+  if (className.includes('10')) return '10th Grade'
+  if (className.includes('9')) return '9th Grade'
+  if (className.includes('8')) return '8th Grade'
+  return className
+}
+
 const TeacherSectionView = ({ segment }: { segment: string }) => {
   const sectionTitles: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
     courses: { title: 'My Courses', subtitle: 'Assigned classes, rooms, schedules, and teaching load.', icon: BookOpen },
@@ -116,12 +127,18 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const [actionMessage, setActionMessage] = useState('')
   const [courses, setCourses] = useState(() =>
-    subjects.map((subject) => ({
+    subjects.map((subject, index) => ({
       ...subject,
+      abbreviation: subject.name.split(' ').map((word) => word[0]).join('').slice(0, 6).toUpperCase(),
+      creditHours: index === 1 ? 4 : index === 0 ? 3 : 2,
+      gradeLevels: [inferGradeLabel(subject.className)],
       studentIds: subject.className.includes('11') ? ['stu-elise'] : subject.className.includes('8') ? ['stu-david'] : [],
       status: 'active',
     })),
   )
+  const [courseTab, setCourseTab] = useState<'setup' | 'enrollment'>('setup')
+  const [courseSearch, setCourseSearch] = useState('')
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
   const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
   const [assignmentList, setAssignmentList] = useState(() => ecosystemAssignments)
@@ -164,8 +181,11 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const [courseDraft, setCourseDraft] = useState({
     name: 'Integrated Science Lab',
+    abbreviation: 'ISL',
+    creditHours: 1,
     className: 'Grade 10A',
     room: 'Lab 2',
+    gradeLevels: ['10th Grade'],
     studentId: superAdminStudentPool[0].id,
   })
   const [selectedStudentId, setSelectedStudentId] = useState(superAdminStudentPool[0].id)
@@ -243,6 +263,28 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     runAction('New report-card course row added.')
   }
 
+  const toggleCourseGrade = (grade: string) => {
+    setCourseDraft((draft) => ({
+      ...draft,
+      gradeLevels: draft.gradeLevels.includes(grade)
+        ? draft.gradeLevels.filter((item) => item !== grade)
+        : [...draft.gradeLevels, grade],
+    }))
+  }
+
+  const resetCourseDraft = () => {
+    setEditingCourseId(null)
+    setCourseDraft({
+      name: 'Integrated Science Lab',
+      abbreviation: 'ISL',
+      creditHours: 1,
+      className: 'Grade 10A',
+      room: 'Lab 2',
+      gradeLevels: ['10th Grade'],
+      studentId: superAdminStudentPool[0].id,
+    })
+  }
+
   const generateReportCard = () => {
     const studentName = reportCardStudent?.name ?? 'Selected student'
     const summary = `${studentName} earned ${reportCardAverage}% for ${reportCardTerm}. Mention: ${reportCardMention}. Decision: ${reportCardDecision}.`
@@ -270,19 +312,50 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const createCourse = () => {
     const nextCourse = {
-      id: `course-${Date.now()}`,
+      id: editingCourseId ?? `course-${Date.now()}`,
       name: courseDraft.name,
+      abbreviation: courseDraft.abbreviation,
+      creditHours: courseDraft.creditHours,
       teacher: 'Dr. Mukendi',
       className: courseDraft.className,
       room: courseDraft.room,
+      gradeLevels: courseDraft.gradeLevels,
       studentIds: courseDraft.studentId ? [courseDraft.studentId] : [],
-      status: 'draft',
+      status: editingCourseId ? 'updated' : 'draft',
     }
-    setCourses((current) => [nextCourse, ...current])
+    setCourses((current) => editingCourseId ? current.map((course) => course.id === editingCourseId ? { ...course, ...nextCourse, studentIds: course.studentIds } : course) : [nextCourse, ...current])
     const student = findStudent(courseDraft.studentId)
     if (student && !teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
-    runAction(`${nextCourse.name} created and prepared for Super Admin sync.`)
+    runAction(`${nextCourse.name} ${editingCourseId ? 'updated' : 'created'} and prepared for Super Admin sync.`)
+    setEditingCourseId(null)
   }
+
+  const editCourse = (courseId: string) => {
+    const course = courses.find((item) => item.id === courseId)
+    if (!course) return
+    setEditingCourseId(course.id)
+    setCourseDraft({
+      name: course.name,
+      abbreviation: course.abbreviation,
+      creditHours: course.creditHours,
+      className: course.className,
+      room: course.room,
+      gradeLevels: course.gradeLevels,
+      studentId: course.studentIds[0] ?? superAdminStudentPool[0].id,
+    })
+    runAction(`${course.name} loaded for editing.`)
+  }
+
+  const deleteCourse = (courseId: string) => {
+    const course = courses.find((item) => item.id === courseId)
+    setCourses((current) => current.filter((item) => item.id !== courseId))
+    runAction(`${course?.name ?? 'Subject'} removed from this teacher workspace.`)
+  }
+
+  const filteredCourses = courses.filter((course) => {
+    const searchable = `${course.gradeLevels.join(' ')} ${course.name} ${course.abbreviation} ${course.room}`.toLowerCase()
+    return searchable.includes(courseSearch.toLowerCase())
+  })
 
   const importStudent = () => {
     const student = findStudent(selectedStudentId)
@@ -376,43 +449,155 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       )}
 
       {segment === 'courses' && (
-        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-          <div className={panelClass}>
-            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create a course</h3>
-            <div className="mt-4 grid gap-3">
-              <input className={inputClass} value={courseDraft.name} onChange={(event) => setCourseDraft((draft) => ({ ...draft, name: event.target.value }))} placeholder="Course name" />
-              <input className={inputClass} value={courseDraft.className} onChange={(event) => setCourseDraft((draft) => ({ ...draft, className: event.target.value }))} placeholder="Class / section" />
-              <input className={inputClass} value={courseDraft.room} onChange={(event) => setCourseDraft((draft) => ({ ...draft, room: event.target.value }))} placeholder="Room" />
-              <select className={inputClass} value={courseDraft.studentId} onChange={(event) => setCourseDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
-                {superAdminStudentPool.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section}</option>)}
-              </select>
-              <button onClick={createCourse} className={compactButton}>Create course and attach student</button>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {courses.map((subject) => (
-              <div key={subject.id} className={panelClass}>
-                <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.className}</p>
-                <h3 className="mt-2 font-bold text-kcs-blue-900 dark:text-white">{subject.name}</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subject.room} - {subject.teacher}</p>
-                <p className="mt-3 text-xs font-semibold text-kcs-blue-600 dark:text-kcs-blue-300">{subject.studentIds.length} student(s) attached - {subject.status}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {superAdminStudentPool.slice(0, 3).map((student) => (
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-2xl border border-kcs-blue-100 bg-white shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="border-b border-gray-100 px-5 pt-5 dark:border-kcs-blue-800">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-kcs-blue-500">Kinshasa Christian School</p>
+                  <h3 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">Subject Setup</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">2025-2026, Second Semester Q4. Tell the system what subjects you teach and which grades are enrolled.</p>
+                </div>
+                <div className="flex rounded-xl bg-gray-100 p-1 dark:bg-kcs-blue-800/40">
+                  {[
+                    { id: 'setup', label: 'Subject Setup' },
+                    { id: 'enrollment', label: 'Subject Enrollment' },
+                  ].map((tab) => (
                     <button
-                      key={student.id}
-                      onClick={() => {
-                        setCourses((current) => current.map((course) => course.id === subject.id && !course.studentIds.includes(student.id) ? { ...course, studentIds: [...course.studentIds, student.id] } : course))
-                        if (!teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
-                        runAction(`${student.name} attached to ${subject.name}.`)
-                      }}
-                      className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:bg-kcs-blue-800/40 dark:text-gray-300"
+                      key={tab.id}
+                      onClick={() => setCourseTab(tab.id as 'setup' | 'enrollment')}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${courseTab === tab.id ? 'bg-white text-kcs-blue-800 shadow-sm dark:bg-kcs-blue-950 dark:text-white' : 'text-gray-500 hover:text-kcs-blue-700 dark:text-gray-300'}`}
                     >
-                      + {student.name.split(' ')[0]}
+                      {tab.label}
                     </button>
                   ))}
                 </div>
               </div>
-            ))}
+            </div>
+
+            {courseTab === 'setup' && (
+              <div className="grid gap-6 p-5 xl:grid-cols-[0.8fr_1.2fr]">
+                <div className="rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
+                  <h4 className="font-bold text-kcs-blue-900 dark:text-white">{editingCourseId ? 'Edit subject' : 'Add a subject that you teach'}</h4>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Fill in the fields below. Grades can be selected in bulk like a school SIS.</p>
+                  <div className="mt-4 grid gap-3">
+                    <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Subject name
+                      <input className={inputClass} value={courseDraft.name} onChange={(event) => setCourseDraft((draft) => ({ ...draft, name: event.target.value }))} />
+                    </label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Abbreviation
+                        <input className={inputClass} value={courseDraft.abbreviation} onChange={(event) => setCourseDraft((draft) => ({ ...draft, abbreviation: event.target.value }))} />
+                      </label>
+                      <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Credit Hours
+                        <input className={inputClass} type="number" min={0} value={courseDraft.creditHours} onChange={(event) => setCourseDraft((draft) => ({ ...draft, creditHours: Number(event.target.value) }))} />
+                      </label>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Room
+                        <input className={inputClass} value={courseDraft.room} onChange={(event) => setCourseDraft((draft) => ({ ...draft, room: event.target.value }))} />
+                      </label>
+                      <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Initial enrollment
+                        <select className={inputClass} value={courseDraft.studentId} onChange={(event) => setCourseDraft((draft) => ({ ...draft, studentId: event.target.value }))}>
+                          {superAdminStudentPool.map((student) => <option key={student.id} value={student.id}>{student.name} - {student.grade}{student.section}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Which grades do you teach the subject for?</p>
+                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {gradeOptions.map((grade) => (
+                          <label key={grade} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${courseDraft.gradeLevels.includes(grade) ? 'border-kcs-blue-300 bg-kcs-blue-50 text-kcs-blue-800 dark:border-kcs-blue-600 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-100' : 'border-gray-200 bg-white text-gray-600 dark:border-kcs-blue-800 dark:bg-kcs-blue-950/40 dark:text-gray-300'}`}>
+                            <input type="checkbox" checked={courseDraft.gradeLevels.includes(grade)} onChange={() => toggleCourseGrade(grade)} />
+                            {grade}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={createCourse} className={compactButton}>{editingCourseId ? 'Save subject' : 'Add subject'}</button>
+                      {editingCourseId && <button onClick={resetCourseDraft} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:border-kcs-blue-700 dark:text-gray-300 dark:hover:bg-kcs-blue-800/40">Cancel edit</button>}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="relative block sm:w-72">
+                      <input className={inputClass} value={courseSearch} onChange={(event) => setCourseSearch(event.target.value)} placeholder="Search" />
+                    </label>
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{filteredCourses.length} subject(s)</span>
+                  </div>
+                  <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-kcs-blue-800">
+                    <table className="w-full min-w-[820px] text-left text-sm">
+                      <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-kcs-blue-800/40 dark:text-gray-300">
+                        <tr>
+                          <th className="px-3 py-3">Grade</th>
+                          <th className="px-3 py-3">Subject</th>
+                          <th className="px-3 py-3">Abbreviation</th>
+                          <th className="px-3 py-3">Cr. Hours</th>
+                          <th className="px-3 py-3">Enrollment</th>
+                          <th className="px-3 py-3">Edit</th>
+                          <th className="px-3 py-3">Delete</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
+                        {filteredCourses.map((subject) => (
+                          <tr key={subject.id} className="text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-3">{subject.gradeLevels.join(', ')}</td>
+                            <td className="px-3 py-3 font-semibold text-kcs-blue-900 dark:text-white">{subject.name}</td>
+                            <td className="px-3 py-3">{subject.abbreviation}</td>
+                            <td className="px-3 py-3">{subject.creditHours}</td>
+                            <td className="px-3 py-3">{subject.studentIds.length}</td>
+                            <td className="px-3 py-3"><button onClick={() => editCourse(subject.id)} className="text-xs font-bold text-kcs-blue-600 hover:text-kcs-blue-800 dark:text-kcs-blue-300">Edit</button></td>
+                            <td className="px-3 py-3"><button onClick={() => deleteCourse(subject.id)} className="text-xs font-bold text-red-600 hover:text-red-700">Delete</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {courseTab === 'enrollment' && (
+              <div className="grid gap-4 p-5 lg:grid-cols-2">
+                {courses.map((subject) => (
+                  <div key={subject.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-kcs-blue-500">{subject.gradeLevels.join(', ')}</p>
+                        <h4 className="mt-1 font-bold text-kcs-blue-900 dark:text-white">{subject.name}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{subject.abbreviation} - {subject.creditHours} credit hour(s) - {subject.room}</p>
+                      </div>
+                      <span className="badge-blue text-xs">{subject.studentIds.length} enrolled</span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {superAdminStudentPool.map((student) => {
+                        const enrolled = subject.studentIds.includes(student.id)
+                        return (
+                          <button
+                            key={student.id}
+                            onClick={() => {
+                              setCourses((current) => current.map((course) => course.id === subject.id ? { ...course, studentIds: enrolled ? course.studentIds.filter((id) => id !== student.id) : [...course.studentIds, student.id] } : course))
+                              if (!enrolled && !teacherStudents.some((item) => item.id === student.id)) setTeacherStudents((current) => [student, ...current])
+                              runAction(`${student.name} ${enrolled ? 'removed from' : 'enrolled in'} ${subject.name}.`)
+                            }}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${enrolled ? 'bg-kcs-blue-700 text-white' : 'bg-white text-gray-700 hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:bg-kcs-blue-950/50 dark:text-gray-300'}`}
+                          >
+                            {enrolled ? '✓' : '+'} {student.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
