@@ -32,7 +32,7 @@ export const useUIStore = create<UIStore>()(
     (set, get) => ({
       theme: 'light',
       language: 'en',
-      sidebarOpen: true,
+      sidebarOpen: false,
       sidebarCollapsed: false,
       notifications: [],
       unreadCount: 0,
