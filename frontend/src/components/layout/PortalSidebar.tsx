@@ -136,7 +136,7 @@ const PortalSidebar = () => {
 
   const renderNavigation = (isMobile = false) => (
     <>
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav className={`flex-1 space-y-1 overflow-y-auto ${isMobile ? 'px-3 py-2' : 'p-3'}`}>
         {navItems.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
@@ -144,13 +144,13 @@ const PortalSidebar = () => {
             end={to === (user.role === 'admin' ? '/admin' : `/portal/${user.role}`)}
             onClick={() => isMobile && setSidebarOpen(false)}
             className={({ isActive }) =>
-              `sidebar-link ${isActive ? 'active' : ''} ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`
+              `sidebar-link ${isMobile ? 'sidebar-link-mobile' : ''} ${isActive ? 'active' : ''} ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`
             }
             title={!isMobile && sidebarCollapsed ? label : undefined}
           >
             <Icon size={18} className="flex-shrink-0" />
             {(isMobile || !sidebarCollapsed) && (
-              <span className="flex-1 whitespace-nowrap">{label}</span>
+              <span className="min-w-0 flex-1 truncate">{label}</span>
             )}
             {badge && badge > 0 && (isMobile || !sidebarCollapsed) && (
               <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -161,11 +161,11 @@ const PortalSidebar = () => {
         ))}
       </nav>
 
-      <div className="space-y-1 border-t border-gray-100 p-3 dark:border-kcs-blue-800">
+      <div className={`${isMobile ? 'mx-3 mb-3 rounded-[22px] border border-gray-100 bg-gray-50/70 p-2 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30' : 'space-y-1 border-t border-gray-100 p-3 dark:border-kcs-blue-800'}`}>
         <Link
           to="/"
           onClick={() => isMobile && setSidebarOpen(false)}
-          className={`sidebar-link ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`}
+          className={`sidebar-link ${isMobile ? 'sidebar-link-mobile' : ''} ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`}
           title={!isMobile && sidebarCollapsed ? 'Main Website' : undefined}
         >
           <Home size={18} className="flex-shrink-0" />
@@ -176,7 +176,7 @@ const PortalSidebar = () => {
             setSidebarOpen(false)
             logout()
           }}
-          className={`sidebar-link w-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`}
+          className={`sidebar-link ${isMobile ? 'sidebar-link-mobile' : ''} w-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`}
           title={!isMobile && sidebarCollapsed ? 'Sign Out' : undefined}
         >
           <LogOut size={18} className="flex-shrink-0" />
@@ -188,9 +188,10 @@ const PortalSidebar = () => {
 
   return (
     <>
-      <div className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-gray-100 bg-white/95 px-4 backdrop-blur-md dark:border-kcs-blue-800 dark:bg-kcs-blue-950/95 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 lg:hidden">
+        <div className="flex h-14 items-center justify-between rounded-[28px] border border-white/70 bg-white/95 px-3 shadow-lg shadow-kcs-blue-950/5 backdrop-blur-md dark:border-kcs-blue-800/80 dark:bg-kcs-blue-950/95">
         <Link to="/" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl kcs-gradient shadow-kcs">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full kcs-gradient shadow-kcs ring-4 ring-white dark:ring-kcs-blue-900">
             <span className="font-display text-sm font-bold text-white">KCS</span>
           </div>
           <div className="min-w-0">
@@ -204,17 +205,18 @@ const PortalSidebar = () => {
         </Link>
         <button
           onClick={toggleSidebar}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-kcs-blue-50 text-kcs-blue-700 transition-colors hover:bg-kcs-blue-100 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800"
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-kcs-blue-50 text-kcs-blue-700 transition-colors hover:bg-kcs-blue-100 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800"
           aria-label={sidebarOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         >
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
+        </div>
       </div>
 
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
-            className="fixed inset-0 z-40 bg-kcs-blue-950/45 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 bg-kcs-blue-950/45 p-3 pt-[76px] backdrop-blur-sm lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -222,16 +224,17 @@ const PortalSidebar = () => {
             onClick={() => setSidebarOpen(false)}
           >
             <motion.aside
-              className="flex h-full w-[min(82vw,320px)] flex-col overflow-hidden border-r border-gray-100 bg-white shadow-2xl dark:border-kcs-blue-800 dark:bg-kcs-blue-950"
+              className="flex max-h-[calc(100dvh-88px)] w-[min(88vw,360px)] flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-2xl shadow-kcs-blue-950/20 dark:border-kcs-blue-800/80 dark:bg-kcs-blue-950"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.16, ease: 'easeOut' }}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="border-b border-gray-100 p-4 dark:border-kcs-blue-800">
+              <div className="border-b border-gray-100 p-3 dark:border-kcs-blue-800">
+                <div className="rounded-[24px] bg-gray-50 p-3 dark:bg-kcs-blue-900/35">
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${roleColor} text-sm font-bold text-white`}>
+                  <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${roleColor} text-sm font-bold text-white ring-4 ring-white dark:ring-kcs-blue-950`}>
                     {user.firstName?.[0]}{user.lastName?.[0]}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -242,6 +245,7 @@ const PortalSidebar = () => {
                       {user.role}
                     </p>
                   </div>
+                </div>
                 </div>
               </div>
               {renderNavigation(true)}
