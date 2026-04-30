@@ -599,7 +599,7 @@ const AdminSectionView = ({
   if (segment === 'students') {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {divisionSummary.map((division) => (
             <button key={division.id} className={`rounded-2xl border bg-white p-4 text-left transition-colors hover:border-kcs-blue-200 hover:bg-kcs-blue-50 dark:bg-kcs-blue-900/50 dark:hover:bg-kcs-blue-900 ${divisionFilter === division.id ? 'border-kcs-blue-400 ring-2 ring-kcs-blue-100 dark:border-kcs-blue-400 dark:ring-kcs-blue-900' : 'border-gray-100 dark:border-kcs-blue-800'}`} onClick={() => {
               setDivisionFilter(division.id)
@@ -625,10 +625,10 @@ const AdminSectionView = ({
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">Student Actions</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Create, delete, filter by division, then open any class to inspect students one by one.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button className={adminButton} onClick={openCreateStudentForm}><UserPlus size={16} className="inline" /> Create student</button>
-              <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700" onClick={() => deleteOfficialStudent(selectedStudent)}><Trash2 size={16} className="inline" /> Delete selected</button>
-              <button className={adminOutlineButton} onClick={() => {
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <button className={`${adminButton} w-full sm:w-auto`} onClick={openCreateStudentForm}><UserPlus size={16} className="inline" /> Create student</button>
+              <button className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 sm:w-auto" onClick={() => deleteOfficialStudent(selectedStudent)}><Trash2 size={16} className="inline" /> Delete selected</button>
+              <button className={`${adminOutlineButton} w-full sm:w-auto`} onClick={() => {
                 setDivisionFilter('All')
                 setGradeFilter('All')
                 setClassFilter('All')
@@ -636,13 +636,15 @@ const AdminSectionView = ({
               }}>View all students</button>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === 'All' ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 dark:bg-kcs-blue-800 dark:text-gray-200'}`} onClick={() => setClassFilter('All')}>All classes</button>
-            {classDirectory.map((className) => (
-              <button key={className} className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === className ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-kcs-blue-50 dark:bg-kcs-blue-800 dark:text-gray-200 dark:hover:bg-kcs-blue-700'}`} onClick={() => setClassFilter(className)}>
-                {className}
-              </button>
-            ))}
+          <div className="-mx-1 mt-4 overflow-x-auto px-1">
+            <div className="flex min-w-max gap-2 pb-1">
+              <button className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === 'All' ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 dark:bg-kcs-blue-800 dark:text-gray-200'}`} onClick={() => setClassFilter('All')}>All classes</button>
+              {classDirectory.map((className) => (
+                <button key={className} className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === className ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-kcs-blue-50 dark:bg-kcs-blue-800 dark:text-gray-200 dark:hover:bg-kcs-blue-700'}`} onClick={() => setClassFilter(className)}>
+                  {className}
+                </button>
+              ))}
+            </div>
           </div>
           {showCreateStudent && (
             <form className="mt-5 rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30" onSubmit={(event) => {
@@ -656,7 +658,7 @@ const AdminSectionView = ({
                 </div>
                 <button type="button" className="w-fit rounded-lg px-3 py-1.5 text-xs font-bold text-kcs-blue-700 hover:bg-white dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800" onClick={() => setShowCreateStudent(false)}>Close</button>
               </div>
-              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" required />
                 <input value={newStudent.studentNumber} onChange={(event) => setNewStudent((item) => ({ ...item, studentNumber: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student number, optional" />
                 <select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
@@ -670,8 +672,8 @@ const AdminSectionView = ({
                 <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
                 <input value={newStudent.advisor} onChange={(event) => setNewStudent((item) => ({ ...item, advisor: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Advisor, optional" />
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button type="submit" className={adminButton}><UserPlus size={16} className="inline" /> Create official record</button>
+              <div className="mt-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+                <button type="submit" className={`${adminButton} w-full sm:w-auto`}><UserPlus size={16} className="inline" /> Create official record</button>
                 <span className="text-xs font-semibold text-kcs-blue-700 dark:text-kcs-blue-200">Target class: {formatClassName(newStudent.grade, newStudent.section)}</span>
               </div>
               {studentNotice && <p className="mt-3 rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
@@ -688,7 +690,7 @@ const AdminSectionView = ({
               </div>
               <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-bold ${apiSynced ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{apiSynced ? 'Live API synced' : 'Local control mode'}</span>
             </div>
-            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_180px]">
+            <div className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_180px_180px]">
               <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 dark:border-kcs-blue-700 dark:bg-kcs-blue-950">
                 <Search size={16} className="text-gray-400" />
                 <input value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none dark:text-white" placeholder="Search name, number, parent, grade, section" />
@@ -730,8 +732,30 @@ const AdminSectionView = ({
                       </div>
                     </div>
                     <div className="overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+                      <div className="space-y-3 p-3 md:hidden">
+                        {classStudents.map((student) => (
+                          <div key={student.id} className={`rounded-xl border p-3 ${selectedStudent.id === student.id ? 'border-kcs-blue-300 bg-kcs-blue-50 dark:border-kcs-blue-500 dark:bg-kcs-blue-800/40' : 'border-gray-100 bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/60'}`}>
+                            <div className="flex items-start justify-between gap-3">
+                              <button className="min-w-0 text-left" onClick={() => setSelectedStudent(student)}>
+                                <p className="truncate font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{student.studentNumber ?? 'No number'} - {student.parent}</p>
+                              </button>
+                              <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${pillTone(getStudentRisk(student))}`}>{getStudentRisk(student)}</span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                              <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`font-bold ${scoreTone(student.gpa, 'gpa')}`}>{student.gpa}</p><p className="text-gray-400">GPA</p></div>
+                              <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`font-bold ${scoreTone(student.attendance, 'attendance')}`}>{student.attendance}%</p><p className="text-gray-400">Attend.</p></div>
+                              <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className="font-bold text-kcs-blue-900 dark:text-white">{student.discipline}</p><p className="text-gray-400">Conduct</p></div>
+                            </div>
+                            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                              <button className="rounded-lg bg-kcs-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-kcs-blue-800" onClick={() => setSelectedStudent(student)}>Open evolution</button>
+                              <button className="rounded-lg border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20" onClick={() => deleteOfficialStudent(student)} aria-label={`Delete ${student.name}`}><Trash2 size={15} /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       <div className="max-h-[520px] overflow-auto">
-                        <table className="min-w-[780px] w-full text-sm">
+                        <table className="hidden min-w-[780px] w-full text-sm md:table">
                           <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400 dark:bg-kcs-blue-900 dark:text-gray-500">
                             <tr>
                               <th className="px-4 py-3 font-semibold">Student</th>
@@ -775,7 +799,7 @@ const AdminSectionView = ({
               })}
             </div>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-6 xl:sticky xl:top-4 xl:self-start">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-kcs-blue-900 dark:text-white">Individual Evolution</h2><p className="text-sm text-gray-500 dark:text-gray-400">{formatClassName(selectedStudent.grade, selectedStudent.section)} - {selectedStudent.status}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(selectedStudent))}`}>{getStudentRisk(selectedStudent)}</span></div>
               <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30"><p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.name}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{selectedStudent.studentNumber ?? 'No student number'} - advisor: {selectedStudent.advisor ?? selectedInsight?.advisor ?? 'Advisor pending'}</p></div>
