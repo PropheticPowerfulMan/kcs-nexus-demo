@@ -714,33 +714,61 @@ const AdminSectionView = ({
               {Object.entries(rosterByClass).map(([className, classStudents]) => {
                 const classAttendance = Math.round(classStudents.reduce((sum, student) => sum + student.attendance, 0) / classStudents.length)
                 const classGpa = Number((classStudents.reduce((sum, student) => sum + student.gpa, 0) / classStudents.length).toFixed(2))
+                const riskCounts = classStudents.reduce<Record<string, number>>((counts, student) => {
+                  const risk = getStudentRisk(student)
+                  counts[risk] = (counts[risk] ?? 0) + 1
+                  return counts
+                }, {})
                 return (
                   <div key={className} className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/20">
                     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div><p className="font-display text-lg font-bold text-kcs-blue-900 dark:text-white">{className}</p><p className="text-xs text-gray-500 dark:text-gray-400">{getDivisionForGrade(classStudents[0].grade).title} - {classStudents.length} enrolled</p></div>
-                      <div className="flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">GPA {classGpa}</span><span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">{classAttendance}% attendance</span></div>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">GPA {classGpa}</span>
+                        <span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">{classAttendance}% attendance</span>
+                        {Object.entries(riskCounts).map(([risk, count]) => <span key={risk} className={`rounded-full px-3 py-1.5 font-semibold ${pillTone(risk)}`}>{count} {risk}</span>)}
+                      </div>
                     </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {classStudents.map((student) => (
-                        <div key={student.id} className={`rounded-xl border bg-white p-4 dark:bg-kcs-blue-900/60 ${selectedStudent.id === student.id ? 'border-kcs-blue-300 dark:border-kcs-blue-500' : 'border-gray-100 dark:border-kcs-blue-800'}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <button className="min-w-0 text-left" onClick={() => setSelectedStudent(student)}>
-                              <p className="truncate font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
-                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{student.studentNumber ?? 'No number'} - {student.parent}</p>
-                            </button>
-                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(student))}`}>{getStudentRisk(student)}</span>
-                          </div>
-                          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`text-sm font-bold ${scoreTone(student.gpa, 'gpa')}`}>{student.gpa}</p><p className="text-gray-400">GPA</p></div>
-                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`text-sm font-bold ${scoreTone(student.attendance, 'attendance')}`}>{student.attendance}%</p><p className="text-gray-400">Attend.</p></div>
-                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className="text-sm font-bold text-kcs-blue-900 dark:text-white">{student.discipline}</p><p className="text-gray-400">Conduct</p></div>
-                          </div>
-                          <div className="mt-3 flex gap-2">
-                            <button className="flex-1 rounded-lg bg-kcs-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-kcs-blue-800" onClick={() => setSelectedStudent(student)}>Open evolution</button>
-                            <button className="rounded-lg border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20" onClick={() => deleteOfficialStudent(student)} aria-label={`Delete ${student.name}`}><Trash2 size={15} /></button>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+                      <div className="max-h-[520px] overflow-auto">
+                        <table className="min-w-[780px] w-full text-sm">
+                          <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400 dark:bg-kcs-blue-900 dark:text-gray-500">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">Student</th>
+                              <th className="px-4 py-3 font-semibold">Parent</th>
+                              <th className="px-4 py-3 text-right font-semibold">GPA</th>
+                              <th className="px-4 py-3 text-right font-semibold">Attendance</th>
+                              <th className="px-4 py-3 font-semibold">Risk</th>
+                              <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/60">
+                            {classStudents.map((student) => (
+                              <tr key={student.id} className={`transition-colors ${selectedStudent.id === student.id ? 'bg-kcs-blue-50 dark:bg-kcs-blue-800/40' : 'hover:bg-gray-50 dark:hover:bg-kcs-blue-800/20'}`}>
+                                <td className="px-4 py-3">
+                                  <button className="text-left" onClick={() => setSelectedStudent(student)}>
+                                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{student.studentNumber ?? 'No number'} - {student.status}</p>
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                                  <p className="font-medium">{student.parent}</p>
+                                  <p className="text-xs text-gray-400">{student.parentPhone}</p>
+                                </td>
+                                <td className={`px-4 py-3 text-right font-bold ${scoreTone(student.gpa, 'gpa')}`}>{student.gpa}</td>
+                                <td className={`px-4 py-3 text-right font-bold ${scoreTone(student.attendance, 'attendance')}`}>{student.attendance}%</td>
+                                <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(student))}`}>{getStudentRisk(student)}</span></td>
+                                <td className="px-4 py-3">
+                                  <div className="flex justify-end gap-2">
+                                    <button className="rounded-lg bg-kcs-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-kcs-blue-800" onClick={() => setSelectedStudent(student)}>Open</button>
+                                    <button className="rounded-lg border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20" onClick={() => deleteOfficialStudent(student)} aria-label={`Delete ${student.name}`}><Trash2 size={15} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )
