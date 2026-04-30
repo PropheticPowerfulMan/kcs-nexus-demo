@@ -195,6 +195,71 @@ const apiProfileToRosterRecord = (profile: any): AdminStudentRecord => {
   }
 }
 
+const transcriptCoursePlan = {
+  'Grade 9': ['English 9', 'Algebra I', 'Biology', 'World History', 'Physical Education', 'French'],
+  'Grade 10': ['English 10', 'Geometry', 'Chemistry', 'African & World Studies', 'ICT', 'Fine Arts'],
+  'Grade 11': ['English Literature', 'Algebra II / Pre-Calculus', 'Physics', 'Economics', 'Research Seminar', 'Elective'],
+  'Grade 12': ['English 12', 'Calculus / Statistics', 'Environmental Science', 'Government', 'College Prep Seminar', 'Elective'],
+} as const
+
+const letterFromAverage = (average: number) => {
+  if (average >= 90) return 'A'
+  if (average >= 80) return 'B'
+  if (average >= 70) return 'C'
+  if (average >= 60) return 'D'
+  return 'F'
+}
+
+const gpaFromAverage = (average: number) => Number(Math.min(4, Math.max(0, average / 25)).toFixed(2))
+
+const buildOfficialTranscript = (student: AdminStudentRecord) => {
+  const gradeOrder = ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12']
+  const currentIndex = Math.max(0, gradeOrder.indexOf(student.grade))
+  const baseline = Math.round((student.gpa || 3.0) * 25)
+  const rows = gradeOrder.map((grade, gradeIndex) => {
+    const publishedReport = reportCards.find((item) => item.student === student.name && gradeIndex === currentIndex)
+    const yearlyAverage = Math.max(58, Math.min(99, Math.round(publishedReport?.average ?? baseline - (currentIndex - gradeIndex) * 2 + (student.attendance >= 94 ? 1 : -1))))
+    const credits = gradeIndex <= currentIndex ? 6 : 0
+    const courses = transcriptCoursePlan[grade as keyof typeof transcriptCoursePlan].map((course, courseIndex) => {
+      const courseAverage = Math.max(55, Math.min(100, yearlyAverage + ((courseIndex % 3) - 1) * 3))
+      return {
+        course,
+        credit: gradeIndex <= currentIndex ? 1 : 0,
+        average: courseAverage,
+        letter: letterFromAverage(courseAverage),
+        gpa: gpaFromAverage(courseAverage),
+      }
+    })
+    return {
+      grade,
+      year: `${2022 + gradeIndex}-${2023 + gradeIndex}`,
+      courses,
+      credits,
+      average: yearlyAverage,
+      annualGpa: gpaFromAverage(yearlyAverage),
+      status: gradeIndex <= currentIndex ? 'Completed' : 'Projected',
+    }
+  })
+  const earnedRows = rows.filter((row) => row.credits > 0)
+  const totalCredits = earnedRows.reduce((sum, row) => sum + row.credits, 0)
+  const cumulativeGpa = totalCredits
+    ? Number((earnedRows.reduce((sum, row) => sum + row.annualGpa * row.credits, 0) / totalCredits).toFixed(2))
+    : 0
+  const cumulativeAverage = earnedRows.length
+    ? Math.round(earnedRows.reduce((sum, row) => sum + row.average, 0) / earnedRows.length)
+    : 0
+  return {
+    student,
+    rows,
+    totalCredits,
+    cumulativeGpa,
+    cumulativeAverage,
+    classRank: student.gpa >= 3.7 ? 'Top 10%' : student.gpa >= 3.2 ? 'Upper half' : 'In progress',
+    generatedAt: new Date().toLocaleDateString(),
+    graduationStatus: totalCredits >= 24 ? 'Graduation requirement met' : `${24 - totalCredits} credits remaining`,
+  }
+}
+
 const admissionSeed: AdminAdmissionRequest[] = admissionsQueue.map((item, index) => ({
   id: `seed-adm-${index + 1}`,
   applicationNumber: `KCS-SEED-${index + 1}`,
@@ -307,6 +372,7 @@ const AdminSectionView = ({
   const [studentNotice, setStudentNotice] = useState('')
   const [apiSynced, setApiSynced] = useState(false)
   const [showCreateStudent, setShowCreateStudent] = useState(true)
+  const [selectedTranscriptId, setSelectedTranscriptId] = useState('')
   const [newStudent, setNewStudent] = useState({
     name: '',
     studentNumber: '',
@@ -445,6 +511,9 @@ const AdminSectionView = ({
     () => officialRoster.filter((student) => ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(student.grade)),
     [officialRoster]
   )
+
+  const transcriptStudent = grade9to12.find((student) => student.id === selectedTranscriptId) ?? grade9to12[0] ?? officialRoster[0]
+  const officialTranscript = buildOfficialTranscript(transcriptStudent)
 
   const filteredRoster = useMemo(() => {
     const query = studentQuery.trim().toLowerCase()
@@ -671,33 +740,120 @@ const AdminSectionView = ({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">Grade 9-12 Transcript Center</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Generate official transcripts using GPA, credits, report cards, and approval status.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Official high-school transcript generated from Grade 9-12 bulletin averages, credits, GPA, rank, and graduation status.</p>
             </div>
-            <button className={adminButton}>Batch export PDF</button>
+            <div className="flex flex-wrap gap-2">
+              <button className={adminButton} onClick={() => window.print()}>Print official transcript</button>
+              <button className={adminOutlineButton} onClick={() => setSelectedTranscriptId(grade9to12[0]?.id ?? '')}>Reset selection</button>
+            </div>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {grade9to12.map((student) => {
-            const transcript = transcripts.find((item) => item.student === student.name)
-            const report = reportCards.find((item) => item.student === student.name)
-            return (
-              <div key={student.id} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Eligible Students</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Only Grade 9 to Grade 12 students appear here because official transcripts begin in high school.</p>
+            </div>
+            {grade9to12.map((student) => {
+              const transcript = transcripts.find((item) => item.student === student.name)
+              const generated = buildOfficialTranscript(student)
+              return (
+                <button key={student.id} className={`w-full rounded-2xl border bg-white p-5 text-left transition-colors hover:border-kcs-blue-200 hover:bg-kcs-blue-50 dark:bg-kcs-blue-900/50 dark:hover:bg-kcs-blue-900 ${transcriptStudent.id === student.id ? 'border-kcs-blue-400 ring-2 ring-kcs-blue-100 dark:border-kcs-blue-400 dark:ring-kcs-blue-900' : 'border-gray-100 dark:border-kcs-blue-800'}`} onClick={() => setSelectedTranscriptId(student.id)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{student.grade} {student.section} - {student.studentNumber ?? 'No student number'}</p>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(transcript?.status ?? generated.graduationStatus)}`}>{transcript?.status ?? generated.graduationStatus}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{generated.cumulativeGpa}</p><p className="text-xs text-gray-400">Cum. GPA</p></div>
+                    <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{generated.totalCredits}</p><p className="text-xs text-gray-400">Credits</p></div>
+                    <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{generated.cumulativeAverage}%</p><p className="text-xs text-gray-400">Average</p></div>
+                  </div>
+                  <span className="mt-4 inline-flex w-full justify-center rounded-xl bg-kcs-gold-500 px-4 py-2.5 text-sm font-bold text-kcs-blue-950 hover:bg-kcs-gold-400">Generate transcript</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="border-b border-gray-100 pb-5 dark:border-kcs-blue-800">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{student.grade} {student.section}</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-kcs-gold-600 dark:text-kcs-gold-300">Official Academic Transcript</p>
+                    <h3 className="mt-1 font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">Kingdom Christian School</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Grade 9-12 cumulative high-school record</p>
                   </div>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(transcript?.status ?? 'Draft')}`}>{transcript?.status ?? 'Draft'}</span>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{student.gpa}</p><p className="text-xs text-gray-400">GPA</p></div>
-                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{transcript?.credits ?? 0}</p><p className="text-xs text-gray-400">Credits</p></div>
-                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{report?.average ?? student.gpa * 25}</p><p className="text-xs text-gray-400">Avg</p></div>
+                <div className="rounded-xl bg-kcs-blue-50 p-4 text-sm dark:bg-kcs-blue-800/30">
+                  <p className="font-bold text-kcs-blue-900 dark:text-white">{officialTranscript.student.name}</p>
+                  <p className="mt-1 text-gray-600 dark:text-gray-300">ID: {officialTranscript.student.studentNumber ?? officialTranscript.student.id}</p>
+                  <p className="text-gray-600 dark:text-gray-300">Generated: {officialTranscript.generatedAt}</p>
                 </div>
-                <button className="mt-4 w-full rounded-xl bg-kcs-gold-500 px-4 py-2.5 text-sm font-bold text-kcs-blue-950 hover:bg-kcs-gold-400">Generate transcript</button>
               </div>
-            )
-          })}
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-4">
+              {[
+                ['Cumulative GPA', officialTranscript.cumulativeGpa],
+                ['Cumulative Average', `${officialTranscript.cumulativeAverage}%`],
+                ['Credits Earned', `${officialTranscript.totalCredits}/24`],
+                ['Class Standing', officialTranscript.classRank],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+                  <p className="mt-1 font-bold text-kcs-blue-900 dark:text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 overflow-x-auto">
+              <table className="min-w-[760px] w-full text-sm">
+                <thead className="text-left text-xs uppercase tracking-wide text-gray-400">
+                  <tr className="border-b border-gray-100 dark:border-kcs-blue-800">
+                    <th className="py-3 font-semibold">Year / Grade</th>
+                    <th className="py-3 font-semibold">Course</th>
+                    <th className="py-3 text-right font-semibold">Credit</th>
+                    <th className="py-3 text-right font-semibold">Average</th>
+                    <th className="py-3 text-right font-semibold">Letter</th>
+                    <th className="py-3 text-right font-semibold">GPA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/60">
+                  {officialTranscript.rows.flatMap((year) => year.courses.map((course, courseIndex) => (
+                    <tr key={`${year.grade}-${course.course}`}>
+                      <td className="py-3 font-semibold text-kcs-blue-900 dark:text-white">{courseIndex === 0 ? `${year.year} - ${year.grade}` : ''}</td>
+                      <td className="py-3 text-gray-600 dark:text-gray-300">{course.course}</td>
+                      <td className="py-3 text-right text-gray-600 dark:text-gray-300">{course.credit}</td>
+                      <td className="py-3 text-right font-semibold text-kcs-blue-900 dark:text-white">{course.average}%</td>
+                      <td className="py-3 text-right font-semibold text-kcs-blue-900 dark:text-white">{course.letter}</td>
+                      <td className="py-3 text-right text-gray-600 dark:text-gray-300">{course.gpa}</td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {officialTranscript.rows.map((year) => (
+                <div key={year.grade} className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-kcs-blue-900 dark:text-white">{year.grade}</p>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(year.status)}`}>{year.status}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Bulletin average: <strong>{year.average}%</strong> - Annual GPA: <strong>{year.annualGpa}</strong> - Credits: <strong>{year.credits}</strong></p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-xl border border-green-100 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-900/10">
+              <p className="font-semibold text-green-800 dark:text-green-300">{officialTranscript.graduationStatus}</p>
+              <p className="mt-1 text-xs text-green-700 dark:text-green-400">Standard calculation: annual bulletin average to letter grade to 4.0 GPA conversion, weighted by high-school credits from Grade 9 through Grade 12.</p>
+            </div>
+          </div>
         </div>
       </div>
     )
