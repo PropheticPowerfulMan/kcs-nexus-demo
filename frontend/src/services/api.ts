@@ -96,11 +96,13 @@ export const eventsAPI = {
 export const studentsAPI = {
   getAll: (params?: object) => api.get('/students', { params }),
   getById: (id: string) => api.get(`/students/${id}`),
+  create: (data: object) => api.post('/students', data),
   getGrades: (id: string) => api.get(`/students/${id}/grades`),
   getAssignments: (id: string) => api.get(`/students/${id}/assignments`),
   getTimetable: (id: string) => api.get(`/students/${id}/timetable`),
   getAnalytics: (id: string) => api.get(`/students/${id}/analytics`),
   update: (id: string, data: object) => api.put(`/students/${id}`, data),
+  delete: (id: string) => api.delete(`/students/${id}`),
 }
 
 // --- Registry API ---

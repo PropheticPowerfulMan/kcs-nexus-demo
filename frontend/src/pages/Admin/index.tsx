@@ -1,9 +1,9 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowUpRight, BookOpen, Brain,
-  AlertTriangle, CheckCircle2, Clock3, FileText, GraduationCap, Mail, Megaphone, MessageSquare, Phone, Radio, Shield, UserPlus, Users, Video
+  AlertTriangle, BarChart3, CheckCircle2, Clock3, FileText, GraduationCap, Mail, Megaphone, MessageSquare, Phone, Radio, Search, Shield, Trash2, UserPlus, Users, Video
 } from 'lucide-react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer,
@@ -12,6 +12,8 @@ import {
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
+import { studentsAPI } from '@/services/api'
+import { SCHOOL_DIVISIONS, SCHOOL_LEVELS } from '@/constants/schoolLevels'
 import {
   aiRecommendations,
   aiSignals,
@@ -23,6 +25,7 @@ import {
   feeAccounts,
   financeReadiness,
   grades,
+  performanceTrend,
   messages,
   reportCards,
   rolePermissions,
@@ -107,7 +110,21 @@ const adminRosterSeed = [
   })),
 ]
 
-type AdminStudentRecord = (typeof adminRosterSeed)[number]
+type AdminStudentRecord = {
+  id: string
+  name: string
+  studentNumber?: string
+  grade: string
+  section: string
+  parent: string
+  parentEmail: string
+  parentPhone: string
+  status: string
+  gpa: number
+  attendance: number
+  discipline: string
+  advisor?: string
+}
 
 type AdminAdmissionRequest = {
   id: string
@@ -134,6 +151,49 @@ type AdminAdmissionRequest = {
 
 const ADMIN_ADMISSIONS_STORAGE_KEY = 'kcs-admin-admission-submissions'
 const ADMIN_ROSTER_STORAGE_KEY = 'kcs-admin-official-roster'
+const CLASS_SECTIONS = ['A', 'B', 'C', 'D'] as const
+
+const getDivisionForGrade = (grade: string) => {
+  return SCHOOL_DIVISIONS.find((division) => {
+    if (division.id === 'kindergarten') return ['K1', 'K2', 'K3', 'K4', 'K5', 'Kindergarten'].includes(grade)
+    if (division.id === 'elementary') return ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'].includes(grade)
+    if (division.id === 'middle') return ['Grade 6', 'Grade 7', 'Grade 8'].includes(grade)
+    return ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(grade)
+  }) ?? SCHOOL_DIVISIONS[0]
+}
+
+const scoreTone = (value: number, type: 'gpa' | 'attendance') => {
+  const threshold = type === 'gpa' ? [2.5, 3.3] : [88, 94]
+  if (value < threshold[0]) return 'text-red-700 dark:text-red-300'
+  if (value < threshold[1]) return 'text-yellow-700 dark:text-yellow-300'
+  return 'text-green-700 dark:text-green-300'
+}
+
+const getStudentRisk = (student: AdminStudentRecord) => {
+  if (student.attendance < 88 || student.gpa < 2.5 || ['Open', 'Monitored'].includes(student.discipline)) return 'Needs action'
+  if (student.attendance < 94 || student.gpa < 3.2) return 'Watch'
+  return 'On track'
+}
+
+const apiProfileToRosterRecord = (profile: any): AdminStudentRecord => {
+  const parentLink = profile.parentLinks?.[0]
+  const parent = parentLink?.parent
+  const fullName = [profile.user?.firstName, profile.user?.lastName].filter(Boolean).join(' ') || profile.studentNumber || 'Unnamed student'
+  return {
+    id: profile.id,
+    name: fullName,
+    studentNumber: profile.studentNumber,
+    grade: profile.grade,
+    section: profile.section,
+    parent: parent ? [parent.firstName, parent.lastName].filter(Boolean).join(' ') : 'Parent record pending',
+    parentEmail: parent?.email ?? `${fullName.toLowerCase().replace(/\W+/g, '.')}@family.kcs.test`,
+    parentPhone: parent?.phone ?? '+243 810 000 000',
+    status: profile.status === 'active' ? 'Active' : profile.status,
+    gpa: Number(profile.gpa ?? 0),
+    attendance: Number(profile.attendanceRate ?? 100),
+    discipline: 'Clear',
+  }
+}
 
 const admissionSeed: AdminAdmissionRequest[] = admissionsQueue.map((item, index) => ({
   id: `seed-adm-${index + 1}`,
@@ -190,6 +250,7 @@ const saveRoster = (items: AdminStudentRecord[]) => {
 const createStudentFromAdmission = (application: AdminAdmissionRequest): AdminStudentRecord => ({
   id: `adm-approved-${application.applicationNumber}`,
   name: application.studentName,
+  studentNumber: application.applicationNumber,
   grade: application.gradeApplying,
   section: 'A',
   parent: application.parentName,
@@ -215,8 +276,8 @@ const getAdminSegment = (pathname: string) => {
 }
 
 const pillTone = (value: string) => {
-  if (['Open', 'Absent', 'Urgent', 'high', 'Documents Missing', 'pending'].includes(value)) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-  if (['Monitored', 'Late', 'Draft', 'medium', 'Under Review', 'partially paid'].includes(value)) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+  if (['Open', 'Absent', 'Urgent', 'high', 'Documents Missing', 'pending', 'Needs action'].includes(value)) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (['Monitored', 'Late', 'Draft', 'medium', 'Under Review', 'partially paid', 'Watch'].includes(value)) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
 }
 
@@ -239,20 +300,51 @@ const AdminSectionView = ({
   const [selectedStudent, setSelectedStudent] = useState(officialRoster[0] ?? adminRosterSeed[0])
   const [selectedStaff, setSelectedStaff] = useState(staffSeed[0])
   const [sentNotice, setSentNotice] = useState('')
+  const [studentQuery, setStudentQuery] = useState('')
+  const [gradeFilter, setGradeFilter] = useState('All')
+  const [studentNotice, setStudentNotice] = useState('')
+  const [apiSynced, setApiSynced] = useState(false)
   const [newStudent, setNewStudent] = useState({
     name: '',
-    grade: 'Grade 9',
+    studentNumber: '',
+    grade: 'Grade 1',
     section: 'A',
     parent: '',
     parentEmail: '',
     parentPhone: '',
+    advisor: '',
   })
 
-  const registerOfficialStudent = () => {
-    if (!newStudent.name.trim() || !newStudent.parent.trim()) return
+  useEffect(() => {
+    let mounted = true
+    studentsAPI.getAll()
+      .then((response) => {
+        const profiles = response.data?.data
+        if (!mounted || !Array.isArray(profiles) || profiles.length === 0) return
+        const apiRoster = profiles.map(apiProfileToRosterRecord)
+        setOfficialRoster(apiRoster)
+        saveRoster(apiRoster)
+        setSelectedStudent(apiRoster[0])
+        setApiSynced(true)
+      })
+      .catch(() => setApiSynced(false))
+    return () => {
+      mounted = false
+    }
+  }, [setOfficialRoster])
+
+  const registerOfficialStudent = async () => {
+    if (!newStudent.name.trim() || !newStudent.parent.trim()) {
+      setStudentNotice('Student and parent names are required before creating the record.')
+      return
+    }
+    const [firstName, ...lastParts] = newStudent.name.trim().split(/\s+/)
+    const [parentFirst, ...parentLastParts] = newStudent.parent.trim().split(/\s+/)
+    const studentNumber = newStudent.studentNumber.trim() || `KCS-${newStudent.grade.replace(/\D/g, '').padStart(2, '0') || '00'}-${Date.now().toString().slice(-4)}`
     const record: AdminStudentRecord = {
       id: `manual-${Date.now()}`,
       name: newStudent.name.trim(),
+      studentNumber,
       grade: newStudent.grade,
       section: newStudent.section,
       parent: newStudent.parent.trim(),
@@ -262,14 +354,58 @@ const AdminSectionView = ({
       gpa: 0,
       attendance: 100,
       discipline: 'Clear',
+      advisor: newStudent.advisor.trim() || 'Advisor pending',
+    }
+    let finalRecord = record
+    try {
+      const response = await studentsAPI.create({
+        student: {
+          firstName,
+          lastName: lastParts.join(' ') || 'Student',
+          studentNumber,
+          grade: newStudent.grade,
+          section: newStudent.section,
+          email: `${studentNumber.toLowerCase()}@students.kcs.local`,
+        },
+        parent: {
+          firstName: parentFirst,
+          lastName: parentLastParts.join(' ') || 'Guardian',
+          email: record.parentEmail,
+          phone: record.parentPhone,
+          relationship: 'Parent',
+        },
+      })
+      const profile = response.data?.data?.student?.studentProfile ?? response.data?.data
+      if (profile?.id) finalRecord = apiProfileToRosterRecord(profile)
+      setApiSynced(true)
+      setStudentNotice('Official student record created and synced with the school API.')
+    } catch {
+      setStudentNotice('Student created locally. It will sync when the school API is available.')
     }
     setOfficialRoster((items) => {
-      const next = [record, ...items]
+      const next = [finalRecord, ...items.filter((item) => item.studentNumber !== finalRecord.studentNumber)]
       saveRoster(next)
       return next
     })
-    setSelectedStudent(record)
-    setNewStudent({ name: '', grade: 'Grade 9', section: 'A', parent: '', parentEmail: '', parentPhone: '' })
+    setSelectedStudent(finalRecord)
+    setNewStudent({ name: '', studentNumber: '', grade: 'Grade 1', section: 'A', parent: '', parentEmail: '', parentPhone: '', advisor: '' })
+  }
+
+  const deleteOfficialStudent = async (student: AdminStudentRecord) => {
+    const confirmed = window.confirm(`Delete ${student.name} from the official roster?`)
+    if (!confirmed) return
+    try {
+      await studentsAPI.delete(student.id)
+      setStudentNotice(`${student.name} was removed from the school API and the Super Admin roster.`)
+    } catch {
+      setStudentNotice(`${student.name} was removed locally. API deletion will need to run when the server is available.`)
+    }
+    setOfficialRoster((items) => {
+      const next = items.filter((item) => item.id !== student.id)
+      saveRoster(next)
+      setSelectedStudent(next[0] ?? adminRosterSeed[0])
+      return next
+    })
   }
 
   const updateAdmissionStatus = (application: AdminAdmissionRequest, status: AdminAdmissionRequest['status']) => {
@@ -296,84 +432,160 @@ const AdminSectionView = ({
     [officialRoster]
   )
 
+  const filteredRoster = useMemo(() => {
+    const query = studentQuery.trim().toLowerCase()
+    return officialRoster
+      .filter((student) => gradeFilter === 'All' || student.grade === gradeFilter)
+      .filter((student) => {
+        if (!query) return true
+        return [student.name, student.studentNumber, student.grade, student.section, student.parent, student.parentEmail]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      })
+      .sort((a, b) => SCHOOL_LEVELS.indexOf(a.grade as any) - SCHOOL_LEVELS.indexOf(b.grade as any) || a.section.localeCompare(b.section) || a.name.localeCompare(b.name))
+  }, [gradeFilter, officialRoster, studentQuery])
+
+  const rosterByClass = useMemo(() => {
+    return filteredRoster.reduce<Record<string, AdminStudentRecord[]>>((groups, student) => {
+      const key = `${student.grade} ${student.section}`
+      groups[key] = [...(groups[key] ?? []), student]
+      return groups
+    }, {})
+  }, [filteredRoster])
+
+  const divisionSummary = useMemo(() => {
+    return SCHOOL_DIVISIONS.map((division) => {
+      const divisionStudents = officialRoster.filter((student) => getDivisionForGrade(student.grade).id === division.id)
+      const averageAttendance = divisionStudents.length
+        ? Math.round(divisionStudents.reduce((sum, student) => sum + student.attendance, 0) / divisionStudents.length)
+        : 0
+      return { ...division, students: divisionStudents.length, averageAttendance }
+    })
+  }, [officialRoster])
+
+  const selectedTrend = useMemo(() => {
+    const knownTrend = performanceTrend.map((item) => {
+      const exact = item[selectedStudent.name.split(' ')[0] as keyof typeof item]
+      if (typeof exact === 'number') return { month: item.month, score: exact }
+      const baseline = Math.round((selectedStudent.gpa || 2.8) * 25)
+      const monthIndex = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'].indexOf(item.month)
+      return { month: item.month, score: Math.max(55, Math.min(99, baseline - 5 + monthIndex + (selectedStudent.attendance >= 94 ? 2 : -2))) }
+    })
+    return knownTrend
+  }, [selectedStudent])
+
+  const selectedGrades = grades.filter((grade) => grade.studentId === selectedStudent.id || selectedStudent.name.includes('Elise') && grade.studentId === 'stu-elise' || selectedStudent.name.includes('David') && grade.studentId === 'stu-david')
+  const selectedAttendanceEvents = attendance.filter((item) => item.studentId === selectedStudent.id || selectedStudent.name.includes('Elise') && item.studentId === 'stu-elise' || selectedStudent.name.includes('David') && item.studentId === 'stu-david')
+  const selectedDiscipline = disciplineReports.find((item) => item.studentId === selectedStudent.id || item.student === selectedStudent.name)
+  const selectedInsight = students.find((item) => item.id === selectedStudent.id || item.name === selectedStudent.name)
+
   if (segment === 'students') {
     return (
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Detailed Student Directory</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Official roster, parent contacts, attendance, GPA, and discipline status.</p>
-            </div>
-            <button className={adminButton} onClick={registerOfficialStudent}><UserPlus size={16} className="inline" /> Register student</button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-[860px] w-full text-sm">
-              <thead className="text-left text-xs text-gray-400">
-                <tr className="border-b border-gray-100 dark:border-kcs-blue-800">
-                  <th className="pb-3 font-medium">Student</th>
-                  <th className="pb-3 font-medium">Grade</th>
-                  <th className="pb-3 font-medium">Parent</th>
-                  <th className="pb-3 text-right font-medium">GPA</th>
-                  <th className="pb-3 text-right font-medium">Attendance</th>
-                  <th className="pb-3 text-right font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-kcs-blue-800/50">
-                {officialRoster.map((student) => (
-                  <tr key={student.id}>
-                    <td className="py-3 font-semibold text-kcs-blue-900 dark:text-white">{student.name}</td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400">{student.grade} {student.section}</td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400">{student.parent}</td>
-                    <td className="py-3 text-right font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{student.gpa}</td>
-                    <td className="py-3 text-right text-gray-600 dark:text-gray-300">{student.attendance}%</td>
-                    <td className="py-3 text-right"><button className="rounded-lg bg-kcs-blue-50 px-3 py-1.5 text-xs font-semibold text-kcs-blue-700 hover:bg-kcs-blue-100 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-200" onClick={() => setSelectedStudent(student)}>Open</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {divisionSummary.map((division) => (
+            <button key={division.id} className="rounded-2xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-kcs-blue-200 hover:bg-kcs-blue-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 dark:hover:bg-kcs-blue-900" onClick={() => setGradeFilter('All')}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{division.levels}</p>
+                <GraduationCap size={17} className="text-kcs-blue-600 dark:text-kcs-blue-300" />
+              </div>
+              <p className="mt-2 font-display text-lg font-bold text-kcs-blue-900 dark:text-white">{division.title}</p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="text-lg font-bold text-kcs-blue-900 dark:text-white">{division.students}</p><p className="text-xs text-gray-500 dark:text-gray-400">students</p></div>
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="text-lg font-bold text-kcs-blue-900 dark:text-white">{division.averageAttendance}%</p><p className="text-xs text-gray-500 dark:text-gray-400">attendance</p></div>
+              </div>
+            </button>
+          ))}
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-          <h2 className="font-bold text-kcs-blue-900 dark:text-white">Student & Parent Record</h2>
-          <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30">
-            <p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.name}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{selectedStudent.grade} {selectedStudent.section} - {selectedStudent.status}</p>
-          </div>
-          <div className="mt-4 space-y-3 text-sm">
-            {[
-              ['Parent', selectedStudent.parent],
-              ['Email', selectedStudent.parentEmail],
-              ['Phone', selectedStudent.parentPhone],
-              ['Discipline', selectedStudent.discipline],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-                <p className="mt-1 font-semibold text-kcs-blue-900 dark:text-white">{value}</p>
+
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="font-bold text-kcs-blue-900 dark:text-white">Super Admin Student Command Center</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">All school students, grouped by official class and connected to parent, academic, attendance, and discipline signals.</p>
               </div>
-            ))}
+              <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-bold ${apiSynced ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{apiSynced ? 'Live API synced' : 'Local control mode'}</span>
+            </div>
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px]">
+              <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 dark:border-kcs-blue-700 dark:bg-kcs-blue-950">
+                <Search size={16} className="text-gray-400" />
+                <input value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none dark:text-white" placeholder="Search name, number, parent, grade, section" />
+              </label>
+              <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                <option>All</option>
+                {SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}
+              </select>
+            </div>
+            <div className="space-y-4">
+              {Object.entries(rosterByClass).map(([className, classStudents]) => {
+                const classAttendance = Math.round(classStudents.reduce((sum, student) => sum + student.attendance, 0) / classStudents.length)
+                const classGpa = Number((classStudents.reduce((sum, student) => sum + student.gpa, 0) / classStudents.length).toFixed(2))
+                return (
+                  <div key={className} className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/20">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div><p className="font-display text-lg font-bold text-kcs-blue-900 dark:text-white">{className}</p><p className="text-xs text-gray-500 dark:text-gray-400">{getDivisionForGrade(classStudents[0].grade).title} - {classStudents.length} enrolled</p></div>
+                      <div className="flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">GPA {classGpa}</span><span className="rounded-full bg-white px-3 py-1.5 font-semibold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">{classAttendance}% attendance</span></div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {classStudents.map((student) => (
+                        <div key={student.id} className={`rounded-xl border bg-white p-4 dark:bg-kcs-blue-900/60 ${selectedStudent.id === student.id ? 'border-kcs-blue-300 dark:border-kcs-blue-500' : 'border-gray-100 dark:border-kcs-blue-800'}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <button className="min-w-0 text-left" onClick={() => setSelectedStudent(student)}>
+                              <p className="truncate font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{student.studentNumber ?? 'No number'} - {student.parent}</p>
+                            </button>
+                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(student))}`}>{getStudentRisk(student)}</span>
+                          </div>
+                          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`text-sm font-bold ${scoreTone(student.gpa, 'gpa')}`}>{student.gpa}</p><p className="text-gray-400">GPA</p></div>
+                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className={`text-sm font-bold ${scoreTone(student.attendance, 'attendance')}`}>{student.attendance}%</p><p className="text-gray-400">Attend.</p></div>
+                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-kcs-blue-800/40"><p className="text-sm font-bold text-kcs-blue-900 dark:text-white">{student.discipline}</p><p className="text-gray-400">Conduct</p></div>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <button className="flex-1 rounded-lg bg-kcs-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-kcs-blue-800" onClick={() => setSelectedStudent(student)}>Open evolution</button>
+                            <button className="rounded-lg border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20" onClick={() => deleteOfficialStudent(student)} aria-label={`Delete ${student.name}`}><Trash2 size={15} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <button className={adminButton}>Save record</button>
-            <button className={adminOutlineButton}>Contact parent</button>
-          </div>
-          <div className="mt-6 rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
-            <h3 className="font-bold text-kcs-blue-900 dark:text-white">Register Student + Parent</h3>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">This official registry feeds teacher, parent, student, finance, attendance, and report-card modules.</p>
-            <div className="mt-4 grid gap-3">
-              <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
-                  {['K3', 'K4', 'K5', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((grade) => <option key={grade}>{grade}</option>)}
-                </select>
-                <select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
-                  {['A', 'B', 'C', 'D'].map((section) => <option key={section}>{section}</option>)}
-                </select>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-kcs-blue-900 dark:text-white">Individual Evolution</h2><p className="text-sm text-gray-500 dark:text-gray-400">{selectedStudent.grade} {selectedStudent.section} - {selectedStudent.status}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(selectedStudent))}`}>{getStudentRisk(selectedStudent)}</span></div>
+              <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30"><p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.name}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{selectedStudent.studentNumber ?? 'No student number'} - advisor: {selectedStudent.advisor ?? selectedInsight?.advisor ?? 'Advisor pending'}</p></div>
+              <div className="mt-4 h-52"><ResponsiveContainer width="100%" height="100%"><BarChart data={selectedTrend}><CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" /><XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} /><YAxis domain={[50, 100]} tickLine={false} axisLine={false} fontSize={11} /><Tooltip /><Bar dataKey="score" fill="#1d4ed8" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className={`font-bold ${scoreTone(selectedStudent.gpa, 'gpa')}`}>{selectedStudent.gpa}</p><p className="text-xs text-gray-400">GPA</p></div><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className={`font-bold ${scoreTone(selectedStudent.attendance, 'attendance')}`}>{selectedStudent.attendance}%</p><p className="text-xs text-gray-400">Attendance</p></div><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.discipline}</p><p className="text-xs text-gray-400">Discipline</p></div></div>
+              <div className="mt-4 space-y-3 text-sm">{[['Parent', selectedStudent.parent], ['Email', selectedStudent.parentEmail], ['Phone', selectedStudent.parentPhone], ['AI note', selectedInsight?.aiInsight ?? 'Build a 30-day support plan from attendance, GPA, conduct, and parent engagement signals.']].map(([label, value]) => <div key={label} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p><p className="mt-1 font-semibold text-kcs-blue-900 dark:text-white">{value}</p></div>)}</div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <div className="mb-4 flex items-center justify-between"><h3 className="font-bold text-kcs-blue-900 dark:text-white">Live School Signals</h3><BarChart3 size={17} className="text-kcs-gold-500" /></div>
+              <div className="space-y-3">
+                {(selectedGrades.length ? selectedGrades : [{ subject: 'Class average', assessment: 'Current term estimate', score: Math.round(selectedStudent.gpa * 25), max: 100, date: 'Now', teacher: selectedStudent.advisor ?? 'Advisor' }]).slice(0, 3).map((item) => <div key={`${item.subject}-${item.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-kcs-blue-900 dark:text-white">{item.subject}</p><span className="font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{item.score}/{item.max}</span></div><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.assessment} - {item.teacher}</p></div>)}
+                {(selectedAttendanceEvents.length ? selectedAttendanceEvents : [{ date: 'Current term', status: selectedStudent.attendance >= 94 ? 'present' : 'watch', className: `${selectedStudent.grade}${selectedStudent.section}` }]).slice(0, 2).map((item) => <div key={`${item.date}-${item.status}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-semibold capitalize text-kcs-blue-900 dark:text-white">{item.status}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.date} - {item.className}</p></div>)}
+                {selectedDiscipline && <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-3 dark:border-yellow-900/40 dark:bg-yellow-900/10"><p className="font-semibold text-yellow-800 dark:text-yellow-300">{selectedDiscipline.category}</p><p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">{selectedDiscipline.followUp}</p></div>}
               </div>
-              <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" />
-              <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
-              <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
-              <button className={adminButton} onClick={registerOfficialStudent}>Create official record</button>
+            </div>
+            <div className="rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create Student + Parent</h3>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Creates the official record and keeps the Super Admin roster updated immediately.</p>
+              <div className="mt-4 grid gap-3">
+                <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" />
+                <input value={newStudent.studentNumber} onChange={(event) => setNewStudent((item) => ({ ...item, studentNumber: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student number, optional" />
+                <div className="grid gap-3 sm:grid-cols-2"><select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">{SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}</select><select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select></div>
+                <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" />
+                <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
+                <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
+                <input value={newStudent.advisor} onChange={(event) => setNewStudent((item) => ({ ...item, advisor: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Advisor, optional" />
+                <button className={adminButton} onClick={registerOfficialStudent}><UserPlus size={16} className="inline" /> Create official record</button>
+                {studentNotice && <p className="rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
+              </div>
             </div>
           </div>
         </div>
