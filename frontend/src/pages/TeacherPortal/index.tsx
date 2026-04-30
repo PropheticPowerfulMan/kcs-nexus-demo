@@ -86,13 +86,17 @@ const rosterNames = [
   'Fatima Abera Merd',
   'Fortune Nacera',
   'Gethsemane Osombo',
+  'Ingele Mboyo Camille',
   "Kabeya N'tumba",
   'Kenania Ofutanya',
   'Kenaya Malonda',
+  'LOMANGO WAMUZILA',
   'Laylay Marcel',
   'Leyana Badjeme',
   'Lyz Nzanzuba Nzau',
   'Mordekai Mutie',
+  'Mualuke Pasuanza',
+  'Ngolu Akande Joel',
   'Reuel Mbayo Mutombo',
   'Tshilumbu Mukendi',
 ]
@@ -103,14 +107,21 @@ const gradingScaleRows = [
   ['70', '71', 'C-'], ['68', '69', 'D+'], ['62', '67', 'D'], ['60', '61', 'D-'], ['0', '60', 'F'],
 ]
 
+const gradebookColumns = [
+  { id: 'homework', title: 'Homework', type: 'Assignment', date: '04/30/2026' },
+  { id: 'quiz1', title: 'Quiz1', type: 'Assignment', date: '04/30/2026' },
+  { id: 'test1', title: 'test1', type: 'Assignment', date: '04/30/2026' },
+  { id: 'test2', title: 'test2', type: 'Assignment', date: '04/30/2026' },
+]
+
 const TeacherSectionView = ({ segment }: { segment: string }) => {
   const sectionTitles: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
     courses: { title: 'My Courses', subtitle: 'Assigned classes, rooms, schedules, and teaching load.', icon: BookOpen },
     students: { title: 'Students', subtitle: 'Academic profile, risk level, strengths, and support needs for each learner.', icon: Users },
     attendance: { title: 'Attendance', subtitle: 'Daily attendance records, class trends, and follow-up signals.', icon: ClipboardCheck },
     assignments: { title: 'Assignments', subtitle: 'Homework status, priorities, missing work, and LMS resources.', icon: FileText },
-    grades: { title: 'Grade Book', subtitle: 'Recent scores, grading categories, scale, and release status.', icon: TrendingUp },
-    'report-card': { title: 'Report Card Builder', subtitle: 'Build student bulletins by course, enter points, and calculate averages automatically.', icon: GraduationCap },
+    grades: { title: 'Gradebook', subtitle: 'Assignments, final grades, averages, medians, legend, and grading scale.', icon: TrendingUp },
+    'report-card': { title: 'Gradebook', subtitle: 'Assignments, final grades, averages, medians, legend, and grading scale.', icon: TrendingUp },
     reports: { title: 'Reports', subtitle: 'Report cards, AI comments, exports, and principal approval status.', icon: GraduationCap },
     discipline: { title: 'Detailed Student Discipline Report', subtitle: 'Incident context, action taken, parent contact, and follow-up plan.', icon: AlertTriangle },
     messages: { title: 'Messages', subtitle: 'Teacher inbox, parent threads, and internal coordination messages.', icon: MessageSquare },
@@ -433,7 +444,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const gradebookMedian = gradebookValues.length ? [...gradebookValues].sort((a, b) => a - b)[Math.floor(gradebookValues.length / 2)] : 0
 
   const updateGradebookScore = (studentId: string, score: string) => {
-    setGradebookScores((current) => ({ ...current, [`${selectedGradebookCourse?.id}-${studentId}`]: score }))
+    setGradebookScores((current) => ({ ...current, [`${selectedGradebookCourse?.id}-final-${studentId}`]: score }))
   }
 
   const importStudent = () => {
@@ -850,7 +861,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
         <div className="space-y-6">
           <div className={panelClass}>
             <h3 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">Gradebook</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Learn more about useful tools, copying grades and general setup for the Gradebook.</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Learn more about Useful Tools, Copying Grades and General Setup for the Gradebook.</p>
             <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1.4fr_0.6fr]">
               <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
                 Semester
@@ -861,7 +872,11 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               <label className="grid gap-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
                 Subject
                 <select className={inputClass} value={selectedGradebookCourse?.id} onChange={(event) => setSelectedGradebookCourseId(event.target.value)}>
-                  {courses.map((course) => <option key={course.id} value={course.id}>({course.gradeLevels[0]}) {course.name} - {course.abbreviation}</option>)}
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.id === 'bio-11' ? '(11th Grade) CHEMISTRY - Chemy' : `(${course.gradeLevels[0]}) ${course.name} - ${course.abbreviation}`}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className="rounded-xl bg-gray-50 px-4 py-3 text-center dark:bg-kcs-blue-800/30">
@@ -875,7 +890,9 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
             <div className="flex flex-col gap-3 border-b border-gray-100 p-4 dark:border-kcs-blue-800 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase text-kcs-blue-500">Students</p>
-                <h4 className="font-bold text-kcs-blue-900 dark:text-white">Final Grade / 100</h4>
+                <h4 className="font-bold text-kcs-blue-900 dark:text-white">
+                  {selectedGradebookCourse?.id === 'bio-11' ? '(11th Grade) CHEMISTRY - Chemy' : selectedGradebookCourse?.name}
+                </h4>
               </div>
               <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-500 dark:text-gray-300">
                 <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-kcs-blue-800/50">Show full name</span>
@@ -885,26 +902,35 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <table className="w-full min-w-[1040px] text-left text-sm">
                 <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-kcs-blue-800/40 dark:text-gray-300">
                   <tr>
                     <th className="px-4 py-3">Student</th>
-                    <th className="px-4 py-3 text-center">I</th>
-                    <th className="px-4 py-3 text-center">I</th>
-                    <th className="px-4 py-3 text-center">Final Grade</th>
+                    {gradebookColumns.map((column) => (
+                      <th key={column.id} className="px-3 py-3 text-center">
+                        <span className="block font-bold text-kcs-blue-900 dark:text-white">{column.title}</span>
+                        <span className="block normal-case text-gray-400">({column.type})</span>
+                        <span className="block normal-case text-gray-400">{column.date}</span>
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center">
+                      <span className="block font-bold text-kcs-blue-900 dark:text-white">Final Grade</span>
+                      <span className="block normal-case text-gray-400">(Final Grade)</span>
+                    </th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
                   {gradebookStudents.map((student) => {
                     if (!student) return null
-                    const key = `${selectedGradebookCourse?.id}-${student.id}`
+                    const key = `${selectedGradebookCourse?.id}-final-${student.id}`
                     const score = gradebookScores[key] ?? ''
                     return (
                       <tr key={student.id} className="text-gray-700 dark:text-gray-300">
-                        <td className="px-4 py-3 font-semibold text-kcs-blue-900 dark:text-white">{student.name}</td>
-                        <td className="px-4 py-3 text-center text-gray-400">I</td>
-                        <td className="px-4 py-3 text-center text-gray-400">I</td>
+                        <td className="max-w-[190px] truncate px-4 py-3 font-semibold text-kcs-blue-900 dark:text-white" title={student.name}>{student.name}</td>
+                        {gradebookColumns.map((column) => (
+                          <td key={`${student.id}-${column.id}`} className="px-3 py-3 text-center font-semibold text-gray-400">I</td>
+                        ))}
                         <td className="px-4 py-3">
                           <input className="mx-auto block w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm font-semibold text-kcs-blue-900 focus:border-kcs-blue-500 focus:outline-none focus:ring-2 focus:ring-kcs-blue-100 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" value={score} onChange={(event) => updateGradebookScore(student.id, event.target.value)} placeholder="0 / 100" />
                         </td>
@@ -914,15 +940,13 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                   })}
                   <tr className="bg-gray-50 font-bold text-kcs-blue-900 dark:bg-kcs-blue-800/30 dark:text-white">
                     <td className="px-4 py-3">Average / Total</td>
-                    <td className="px-4 py-3" />
-                    <td className="px-4 py-3" />
+                    {gradebookColumns.map((column) => <td key={`avg-${column.id}`} className="px-3 py-3 text-center">I</td>)}
                     <td className="px-4 py-3 text-center">{gradebookAverage} / 100</td>
                     <td className="px-4 py-3" />
                   </tr>
                   <tr className="bg-gray-50 font-bold text-kcs-blue-900 dark:bg-kcs-blue-800/30 dark:text-white">
                     <td className="px-4 py-3">Median / Total</td>
-                    <td className="px-4 py-3" />
-                    <td className="px-4 py-3" />
+                    {gradebookColumns.map((column) => <td key={`median-${column.id}`} className="px-3 py-3 text-center">I</td>)}
                     <td className="px-4 py-3 text-center">{gradebookMedian} / 100</td>
                     <td className="px-4 py-3" />
                   </tr>
