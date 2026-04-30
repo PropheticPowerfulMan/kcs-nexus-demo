@@ -88,6 +88,56 @@ type ParentData  = z.infer<typeof parentSchema>
 
 const SCHOOL_ADMISSIONS_EMAIL = 'kinshasachristianschool@gmail.com'
 const ADMIN_ADMISSIONS_STORAGE_KEY = 'kcs-admin-admission-submissions'
+const isStaticAdmissionsSite = import.meta.env.PROD && !import.meta.env.VITE_API_URL
+
+const buildAdmissionEmailBody = (
+  applicationNumber: string,
+  studentData: StudentData,
+  parentData: ParentData,
+  notes: string,
+  documents: Record<string, File | null>,
+) => {
+  const documentNames = Object.values(documents).filter(Boolean).map((file) => file?.name).join(', ') || 'No documents attached online'
+
+  return [
+    `New KCS online admission application: ${applicationNumber}`,
+    '',
+    'STUDENT INFORMATION',
+    `First name: ${studentData.firstName}`,
+    `Last name: ${studentData.lastName}`,
+    `Date of birth: ${studentData.dateOfBirth}`,
+    `Nationality: ${studentData.nationality}`,
+    `Grade applying: ${studentData.applyingGrade}`,
+    `Previous/current school: ${studentData.currentSchool}`,
+    `Languages spoken: ${studentData.languages || 'Not provided'}`,
+    '',
+    'PARENT / GUARDIAN INFORMATION',
+    `Name: ${parentData.parentName}`,
+    `Relationship: ${parentData.relationship}`,
+    `Email: ${parentData.email}`,
+    `Phone: ${parentData.phone}`,
+    `Address: ${parentData.address}`,
+    `Occupation: ${parentData.occupation || 'Not provided'}`,
+    '',
+    'NOTES',
+    notes || 'Not provided',
+    '',
+    'DOCUMENTS',
+    documentNames,
+  ].join('\n')
+}
+
+const buildAdmissionMailtoHref = (
+  applicationNumber: string,
+  studentData: StudentData,
+  parentData: ParentData,
+  notes: string,
+  documents: Record<string, File | null>,
+) => {
+  const subject = `New KCS online admission - ${applicationNumber} - ${studentData.firstName} ${studentData.lastName}`
+  const body = buildAdmissionEmailBody(applicationNumber, studentData, parentData, notes, documents)
+  return `mailto:${SCHOOL_ADMISSIONS_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
 
 const saveApplicationForAdmin = (
   applicationNumber: string,
@@ -137,6 +187,8 @@ const sendAdmissionFallbackEmail = async (
   fallbackData.append('_subject', `New KCS online admission - ${applicationNumber} - ${studentData.firstName} ${studentData.lastName}`)
   fallbackData.append('_template', 'table')
   fallbackData.append('_captcha', 'false')
+  fallbackData.append('_replyto', parentData.email)
+  fallbackData.append('_autoresponse', `Thank you for applying to Kinshasa Christian School. Your application ID is ${applicationNumber}.`)
   fallbackData.append('Application number', applicationNumber)
   fallbackData.append('Student first name', studentData.firstName)
   fallbackData.append('Student last name', studentData.lastName)
@@ -153,7 +205,7 @@ const sendAdmissionFallbackEmail = async (
   fallbackData.append('Occupation', parentData.occupation ?? 'Not provided')
   fallbackData.append('Notes', notes || 'Not provided')
   Object.entries(documents).forEach(([key, file]) => {
-    if (file) fallbackData.append(`Document - ${key}`, file)
+    if (file) fallbackData.append(`Document provided - ${key}`, file.name)
   })
 
   const response = await fetch(`https://formsubmit.co/ajax/${SCHOOL_ADMISSIONS_EMAIL}`, {
@@ -178,6 +230,7 @@ const AdmissionsPage = () => {
   const [submitError, setSubmitError] = useState('')
   const [submitWarning, setSubmitWarning] = useState('')
   const [applicationId, setApplicationId] = useState('')
+  const [manualEmailHref, setManualEmailHref] = useState('')
 
   const stepIdx = STEPS.indexOf(activeStep)
 
@@ -202,8 +255,21 @@ const AdmissionsPage = () => {
     setSubmitting(true)
     setSubmitError('')
     setSubmitWarning('')
+    setManualEmailHref('')
 
     try {
+      const applicationNumber = `KCS-${Date.now().toString().slice(-6)}`
+
+      if (isStaticAdmissionsSite) {
+        await sendAdmissionFallbackEmail(applicationNumber, studentData, parentData, notes, documents)
+        saveApplicationForAdmin(applicationNumber, studentData, parentData, notes, documents)
+        setApplicationId(applicationNumber)
+        setSubmitWarning('Application sent to the school email. Uploaded file names were included; large documents should also be sent directly to the admissions office if requested.')
+        setManualEmailHref(buildAdmissionMailtoHref(applicationNumber, studentData, parentData, notes, documents))
+        setSubmitted(true)
+        return
+      }
+
       const formData = new FormData()
       formData.append('firstName', studentData.firstName)
       formData.append('lastName', studentData.lastName)
@@ -226,21 +292,22 @@ const AdmissionsPage = () => {
       })
 
       const response = await admissionsAPI.create(formData)
-      const applicationNumber = response.data?.data?.applicationNumber || `KCS-${Date.now().toString().slice(-6)}`
+      const savedApplicationNumber = response.data?.data?.applicationNumber || applicationNumber
       const emailSent = response.data?.data?.emailDelivery?.sent
 
       if (!emailSent) {
         try {
-          await sendAdmissionFallbackEmail(applicationNumber, studentData, parentData, notes, documents)
+          await sendAdmissionFallbackEmail(savedApplicationNumber, studentData, parentData, notes, documents)
           setSubmitWarning('Application saved. The school mail server needs SMTP configuration, so a backup email notification was sent to the school address.')
         } catch (fallbackError) {
           console.error('Admission backup email failed after API submission:', fallbackError)
           setSubmitWarning(`Application saved successfully, but the email notification could not be sent automatically. Please contact the school at ${SCHOOL_ADMISSIONS_EMAIL} with your application number.`)
+          setManualEmailHref(buildAdmissionMailtoHref(savedApplicationNumber, studentData, parentData, notes, documents))
         }
       }
 
-      saveApplicationForAdmin(applicationNumber, studentData, parentData, notes, documents)
-      setApplicationId(applicationNumber)
+      saveApplicationForAdmin(savedApplicationNumber, studentData, parentData, notes, documents)
+      setApplicationId(savedApplicationNumber)
       setSubmitted(true)
     } catch (error) {
       const fallbackApplicationNumber = `KCS-${Date.now().toString().slice(-6)}`
@@ -250,9 +317,11 @@ const AdmissionsPage = () => {
         saveApplicationForAdmin(fallbackApplicationNumber, studentData, parentData, notes, documents)
         setApplicationId(fallbackApplicationNumber)
         setSubmitWarning('The live admissions API was unavailable, so the application was sent directly to the school email using the backup channel.')
+        setManualEmailHref(buildAdmissionMailtoHref(fallbackApplicationNumber, studentData, parentData, notes, documents))
         setSubmitted(true)
       } catch {
         console.error('Admission submission failed:', error)
+        setManualEmailHref(buildAdmissionMailtoHref(fallbackApplicationNumber, studentData, parentData, notes, documents))
         setSubmitError(`We could not send the application automatically. Please email the school directly at ${SCHOOL_ADMISSIONS_EMAIL} or try again in a few minutes.`)
       }
     } finally {
@@ -406,6 +475,14 @@ const AdmissionsPage = () => {
                   <p className="mx-auto mt-4 max-w-xl rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-200">
                     {submitWarning}
                   </p>
+                )}
+                {manualEmailHref && (
+                  <a
+                    href={manualEmailHref}
+                    className="mt-4 inline-flex items-center justify-center rounded-xl bg-kcs-blue-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800"
+                  >
+                    Open email manually
+                  </a>
                 )}
               </motion.div>
             ) : (
@@ -638,6 +715,14 @@ const AdmissionsPage = () => {
                           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
                             {submitError}
                           </p>
+                        )}
+                        {manualEmailHref && (
+                          <a
+                            href={manualEmailHref}
+                            className="mb-4 inline-flex rounded-xl bg-kcs-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800"
+                          >
+                            Open email manually
+                          </a>
                         )}
                         <div className="flex justify-between">
                           <button onClick={() => setActiveStep('Documents')} className="btn-primary bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
