@@ -107,12 +107,13 @@ const gradingScaleRows = [
   ['70', '71', 'C-'], ['68', '69', 'D+'], ['62', '67', 'D'], ['60', '61', 'D-'], ['0', '60', 'F'],
 ]
 
-const gradebookColumns = [
-  { id: 'homework', title: 'Homework', type: 'Assignment', date: '04/30/2026' },
-  { id: 'quiz1', title: 'Quiz1', type: 'Assignment', date: '04/30/2026' },
-  { id: 'test1', title: 'test1', type: 'Assignment', date: '04/30/2026' },
-  { id: 'test2', title: 'test2', type: 'Assignment', date: '04/30/2026' },
-]
+type GradebookColumn = {
+  id: string
+  title: string
+  type: string
+  date: string
+  maxPoints: number
+}
 
 const TeacherSectionView = ({ segment }: { segment: string }) => {
   const sectionTitles: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
@@ -203,6 +204,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [selectedEnrollmentCourseId, setSelectedEnrollmentCourseId] = useState(subjects[0].id)
   const [selectedGradebookCourseId, setSelectedGradebookCourseId] = useState(subjects[1].id)
+  const [gradebookColumnsByCourse, setGradebookColumnsByCourse] = useState<Record<string, GradebookColumn[]>>({})
   const [gradebookScores, setGradebookScores] = useState<Record<string, string>>({})
   const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
   const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
@@ -295,6 +297,12 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     to: 'Academic Coordinator',
     subject: 'Student support update',
     body: 'Please review the new intervention note and confirm next steps.',
+  })
+  const [gradebookColumnDraft, setGradebookColumnDraft] = useState({
+    title: 'Homework',
+    type: 'Assignment',
+    date: '04/30/2026',
+    maxPoints: 100,
   })
 
   const findStudent = (studentId: string) => superAdminStudentPool.find((student) => student.id === studentId)
@@ -436,15 +444,73 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   }
 
   const selectedGradebookCourse = courses.find((course) => course.id === selectedGradebookCourseId) ?? courses[0]
-  const gradebookStudents = selectedGradebookCourse?.studentIds.map((studentId) => findStudent(studentId)).filter(Boolean) ?? []
+  const gradebookColumns = selectedGradebookCourse ? gradebookColumnsByCourse[selectedGradebookCourse.id] ?? [] : []
+  const gradebookStudents = selectedGradebookCourse?.studentIds
+    .map((studentId) => findStudent(studentId))
+    .filter((student): student is NonNullable<typeof student> => Boolean(student)) ?? []
+
+  const getGradebookScoreKey = (columnId: string, studentId: string) => `${selectedGradebookCourse?.id}-${columnId}-${studentId}`
+  const normalizeGradebookEntry = (value: string, maxPoints: number) => {
+    const normalized = value.trim().toUpperCase()
+    if (!normalized || normalized === 'E' || normalized === 'I') return null
+    if (normalized === 'U') return 0
+    const numeric = Number(normalized)
+    if (!Number.isFinite(numeric)) return null
+    return Math.max(0, Math.min(100, (numeric / Math.max(maxPoints, 1)) * 100))
+  }
+
+  const getFinalGrade = (studentId: string) => {
+    const countedScores = gradebookColumns
+      .map((column) => normalizeGradebookEntry(gradebookScores[getGradebookScoreKey(column.id, studentId)] ?? '', column.maxPoints))
+      .filter((score): score is number => score !== null)
+    if (!countedScores.length) return null
+    return Math.round(countedScores.reduce((sum, score) => sum + score, 0) / countedScores.length)
+  }
+
   const gradebookValues = gradebookStudents
-    .map((student) => Number(gradebookScores[`${selectedGradebookCourse?.id}-${student?.id}`]))
-    .filter((score) => Number.isFinite(score))
+    .map((student) => getFinalGrade(student.id))
+    .filter((score): score is number => score !== null)
   const gradebookAverage = gradebookValues.length ? Math.round(gradebookValues.reduce((sum, score) => sum + score, 0) / gradebookValues.length) : 0
   const gradebookMedian = gradebookValues.length ? [...gradebookValues].sort((a, b) => a - b)[Math.floor(gradebookValues.length / 2)] : 0
 
-  const updateGradebookScore = (studentId: string, score: string) => {
-    setGradebookScores((current) => ({ ...current, [`${selectedGradebookCourse?.id}-final-${studentId}`]: score }))
+  const updateGradebookScore = (columnId: string, studentId: string, score: string) => {
+    setGradebookScores((current) => ({ ...current, [getGradebookScoreKey(columnId, studentId)]: score }))
+  }
+
+  const createGradebookColumn = () => {
+    const title = gradebookColumnDraft.title.trim()
+    if (!title) {
+      runAction('Add a column name before creating a gradebook column.')
+      return
+    }
+    const nextColumn = {
+      id: `gb-${Date.now()}`,
+      title,
+      type: gradebookColumnDraft.type.trim() || 'Assignment',
+      date: gradebookColumnDraft.date.trim() || '04/30/2026',
+      maxPoints: Math.max(1, Number(gradebookColumnDraft.maxPoints) || 100),
+    }
+    setGradebookColumnsByCourse((current) => ({
+      ...current,
+      [selectedGradebookCourse.id]: [...(current[selectedGradebookCourse.id] ?? []), nextColumn],
+    }))
+    setGradebookColumnDraft((draft) => ({ ...draft, title: '', maxPoints: 100 }))
+    runAction(`${nextColumn.title} column added. Final grades will recalculate automatically.`)
+  }
+
+  const deleteGradebookColumn = (columnId: string) => {
+    setGradebookColumnsByCourse((current) => ({
+      ...current,
+      [selectedGradebookCourse.id]: (current[selectedGradebookCourse.id] ?? []).filter((column) => column.id !== columnId),
+    }))
+    setGradebookScores((current) => {
+      const next = { ...current }
+      Object.keys(next).forEach((key) => {
+        if (key.includes(`-${columnId}-`)) delete next[key]
+      })
+      return next
+    })
+    runAction('Gradebook column removed and final grades recalculated.')
   }
 
   const importStudent = () => {
@@ -874,7 +940,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                 <select className={inputClass} value={selectedGradebookCourse?.id} onChange={(event) => setSelectedGradebookCourseId(event.target.value)}>
                   {courses.map((course) => (
                     <option key={course.id} value={course.id}>
-                      {course.id === 'bio-11' ? '(11th Grade) CHEMISTRY - Chemy' : `(${course.gradeLevels[0]}) ${course.name} - ${course.abbreviation}`}
+                      ({course.gradeLevels[0]}) {course.name} - {course.abbreviation}
                     </option>
                   ))}
                 </select>
@@ -884,6 +950,35 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Students</p>
               </div>
             </div>
+            <div className="mt-4 grid gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30 lg:grid-cols-[1fr_0.8fr_0.8fr_0.5fr_auto]">
+              <input
+                className={inputClass}
+                value={gradebookColumnDraft.title}
+                onChange={(event) => setGradebookColumnDraft((draft) => ({ ...draft, title: event.target.value }))}
+                placeholder="Column name"
+              />
+              <input
+                className={inputClass}
+                value={gradebookColumnDraft.type}
+                onChange={(event) => setGradebookColumnDraft((draft) => ({ ...draft, type: event.target.value }))}
+                placeholder="Assignment"
+              />
+              <input
+                className={inputClass}
+                value={gradebookColumnDraft.date}
+                onChange={(event) => setGradebookColumnDraft((draft) => ({ ...draft, date: event.target.value }))}
+                placeholder="04/30/2026"
+              />
+              <input
+                className={inputClass}
+                type="number"
+                min={1}
+                value={gradebookColumnDraft.maxPoints}
+                onChange={(event) => setGradebookColumnDraft((draft) => ({ ...draft, maxPoints: Number(event.target.value) }))}
+                placeholder="100"
+              />
+              <button onClick={createGradebookColumn} className={compactButton}>Add column</button>
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
@@ -891,8 +986,11 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
               <div>
                 <p className="text-xs font-semibold uppercase text-kcs-blue-500">Students</p>
                 <h4 className="font-bold text-kcs-blue-900 dark:text-white">
-                  {selectedGradebookCourse?.id === 'bio-11' ? '(11th Grade) CHEMISTRY - Chemy' : selectedGradebookCourse?.name}
+                  {selectedGradebookCourse ? `(${selectedGradebookCourse.gradeLevels[0]}) ${selectedGradebookCourse.name} - ${selectedGradebookCourse.abbreviation}` : 'Select a course'}
                 </h4>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Students are loaded from the class selected when the course is created.
+                </p>
               </div>
               <div className="flex flex-wrap gap-2 text-xs font-semibold text-gray-500 dark:text-gray-300">
                 <span className="rounded-full bg-gray-100 px-3 py-1 dark:bg-kcs-blue-800/50">Show full name</span>
@@ -911,6 +1009,9 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                         <span className="block font-bold text-kcs-blue-900 dark:text-white">{column.title}</span>
                         <span className="block normal-case text-gray-400">({column.type})</span>
                         <span className="block normal-case text-gray-400">{column.date}</span>
+                        <button onClick={() => deleteGradebookColumn(column.id)} className="mt-2 text-[11px] font-semibold normal-case text-red-500 hover:text-red-600">
+                          Remove
+                        </button>
                       </th>
                     ))}
                     <th className="px-4 py-3 text-center">
@@ -922,22 +1023,46 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
                   {gradebookStudents.map((student) => {
-                    if (!student) return null
-                    const key = `${selectedGradebookCourse?.id}-final-${student.id}`
-                    const score = gradebookScores[key] ?? ''
+                    const finalGrade = getFinalGrade(student.id)
                     return (
                       <tr key={student.id} className="text-gray-700 dark:text-gray-300">
                         <td className="max-w-[190px] truncate px-4 py-3 font-semibold text-kcs-blue-900 dark:text-white" title={student.name}>{student.name}</td>
-                        {gradebookColumns.map((column) => (
-                          <td key={`${student.id}-${column.id}`} className="px-3 py-3 text-center font-semibold text-gray-400">I</td>
-                        ))}
+                        {gradebookColumns.map((column) => {
+                          const score = gradebookScores[getGradebookScoreKey(column.id, student.id)] ?? ''
+                          return (
+                            <td key={`${student.id}-${column.id}`} className="px-3 py-3">
+                              <input
+                                className="mx-auto block w-20 rounded-lg border border-gray-200 bg-white px-2 py-2 text-center text-sm font-semibold text-kcs-blue-900 focus:border-kcs-blue-500 focus:outline-none focus:ring-2 focus:ring-kcs-blue-100 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white"
+                                value={score}
+                                onChange={(event) => updateGradebookScore(column.id, student.id, event.target.value)}
+                                placeholder="I"
+                              />
+                            </td>
+                          )
+                        })}
                         <td className="px-4 py-3">
-                          <input className="mx-auto block w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-sm font-semibold text-kcs-blue-900 focus:border-kcs-blue-500 focus:outline-none focus:ring-2 focus:ring-kcs-blue-100 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" value={score} onChange={(event) => updateGradebookScore(student.id, event.target.value)} placeholder="0 / 100" />
+                          <div className="mx-auto w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm font-bold text-kcs-blue-900 dark:border-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-white">
+                            {finalGrade === null ? 'I' : `${finalGrade} / 100`}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-xs">{score === '' ? 'Blank ignored' : Number(score) === 0 ? 'Zero counted' : 'Counted'}</td>
+                        <td className="px-4 py-3 text-xs">{finalGrade === null ? 'No counted grades' : 'Auto-calculated'}</td>
                       </tr>
                     )
                   })}
+                  {!gradebookStudents.length && (
+                    <tr>
+                      <td colSpan={gradebookColumns.length + 3} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        Select or create a course with a class roster to populate the Gradebook.
+                      </td>
+                    </tr>
+                  )}
+                  {gradebookStudents.length > 0 && gradebookColumns.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        Create the first grade column above. Final Grade will calculate automatically after scores are entered.
+                      </td>
+                    </tr>
+                  )}
                   <tr className="bg-gray-50 font-bold text-kcs-blue-900 dark:bg-kcs-blue-800/30 dark:text-white">
                     <td className="px-4 py-3">Average / Total</td>
                     {gradebookColumns.map((column) => <td key={`avg-${column.id}`} className="px-3 py-3 text-center">I</td>)}
