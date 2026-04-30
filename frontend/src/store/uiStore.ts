@@ -7,7 +7,6 @@ interface UIStore {
   language: Language
   sidebarOpen: boolean
   sidebarCollapsed: boolean
-  sidebarHidden: boolean
   notifications: Notification[]
   unreadCount: number
   chatOpen: boolean
@@ -20,8 +19,6 @@ interface UIStore {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   toggleSidebarCollapse: () => void
-  toggleSidebarHidden: () => void
-  setSidebarHidden: (hidden: boolean) => void
   addNotification: (notification: Notification) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
@@ -37,7 +34,6 @@ export const useUIStore = create<UIStore>()(
       language: 'en',
       sidebarOpen: false,
       sidebarCollapsed: false,
-      sidebarHidden: false,
       notifications: [],
       unreadCount: 0,
       chatOpen: false,
@@ -63,11 +59,6 @@ export const useUIStore = create<UIStore>()(
 
       toggleSidebarCollapse: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-
-      toggleSidebarHidden: () =>
-        set((state) => ({ sidebarHidden: !state.sidebarHidden })),
-
-      setSidebarHidden: (hidden) => set({ sidebarHidden: hidden }),
 
       addNotification: (notification) =>
         set((state) => ({
@@ -102,7 +93,6 @@ export const useUIStore = create<UIStore>()(
         theme: state.theme,
         language: state.language,
         sidebarCollapsed: state.sidebarCollapsed,
-        sidebarHidden: state.sidebarHidden,
       }),
     }
   )

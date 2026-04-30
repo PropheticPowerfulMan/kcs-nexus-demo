@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
-  Users, Settings, Bell, ChevronLeft, ChevronRight, PanelLeftClose,
+  Users, Settings, Bell, ChevronLeft, ChevronRight,
   GraduationCap, BarChart3, MessageSquare, LogOut,
   Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet, WalletCards, ClipboardCheck, AlertTriangle
 } from 'lucide-react'
@@ -103,21 +103,15 @@ const PortalSidebar = () => {
   const { user, logout } = useAuthStore()
   const {
     sidebarCollapsed,
-    sidebarHidden,
     sidebarOpen,
     toggleSidebar,
     toggleSidebarCollapse,
     setSidebarOpen,
-    setSidebarHidden,
   } = useUIStore()
 
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname, setSidebarOpen])
-
-  useEffect(() => {
-    if (sidebarHidden) setSidebarHidden(false)
-  }, [sidebarHidden, setSidebarHidden])
 
   if (!user) return null
 
@@ -293,16 +287,6 @@ const PortalSidebar = () => {
             )}
           </AnimatePresence>
         </Link>
-        {!sidebarCollapsed && (
-          <button
-            onClick={toggleSidebarCollapse}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-colors hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-gray-300 dark:hover:bg-kcs-blue-800"
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-          >
-            <PanelLeftClose size={16} />
-          </button>
-        )}
         </div>
       </div>
 
