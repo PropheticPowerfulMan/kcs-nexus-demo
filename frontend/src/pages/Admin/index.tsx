@@ -301,9 +301,12 @@ const AdminSectionView = ({
   const [selectedStaff, setSelectedStaff] = useState(staffSeed[0])
   const [sentNotice, setSentNotice] = useState('')
   const [studentQuery, setStudentQuery] = useState('')
+  const [divisionFilter, setDivisionFilter] = useState('All')
   const [gradeFilter, setGradeFilter] = useState('All')
+  const [classFilter, setClassFilter] = useState('All')
   const [studentNotice, setStudentNotice] = useState('')
   const [apiSynced, setApiSynced] = useState(false)
+  const [showCreateStudent, setShowCreateStudent] = useState(true)
   const [newStudent, setNewStudent] = useState({
     name: '',
     studentNumber: '',
@@ -408,6 +411,17 @@ const AdminSectionView = ({
     })
   }
 
+  const openCreateStudentForm = () => {
+    if (classFilter !== 'All') {
+      const section = classFilter.at(-1) ?? 'A'
+      const grade = classFilter.replace(/\s[A-D]$/, '')
+      setNewStudent((item) => ({ ...item, grade, section }))
+    } else if (gradeFilter !== 'All') {
+      setNewStudent((item) => ({ ...item, grade: gradeFilter }))
+    }
+    setShowCreateStudent(true)
+  }
+
   const updateAdmissionStatus = (application: AdminAdmissionRequest, status: AdminAdmissionRequest['status']) => {
     setAdmissionRequests((items) => {
       const next = items.map((item) => item.applicationNumber === application.applicationNumber ? { ...item, status } : item)
@@ -435,7 +449,9 @@ const AdminSectionView = ({
   const filteredRoster = useMemo(() => {
     const query = studentQuery.trim().toLowerCase()
     return officialRoster
+      .filter((student) => divisionFilter === 'All' || getDivisionForGrade(student.grade).id === divisionFilter)
       .filter((student) => gradeFilter === 'All' || student.grade === gradeFilter)
+      .filter((student) => classFilter === 'All' || `${student.grade} ${student.section}` === classFilter)
       .filter((student) => {
         if (!query) return true
         return [student.name, student.studentNumber, student.grade, student.section, student.parent, student.parentEmail]
@@ -445,7 +461,19 @@ const AdminSectionView = ({
           .includes(query)
       })
       .sort((a, b) => SCHOOL_LEVELS.indexOf(a.grade as any) - SCHOOL_LEVELS.indexOf(b.grade as any) || a.section.localeCompare(b.section) || a.name.localeCompare(b.name))
-  }, [gradeFilter, officialRoster, studentQuery])
+  }, [classFilter, divisionFilter, gradeFilter, officialRoster, studentQuery])
+
+  const classDirectory = useMemo(() => {
+    const classes = officialRoster
+      .filter((student) => divisionFilter === 'All' || getDivisionForGrade(student.grade).id === divisionFilter)
+      .filter((student) => gradeFilter === 'All' || student.grade === gradeFilter)
+      .map((student) => `${student.grade} ${student.section}`)
+    return Array.from(new Set(classes)).sort((a, b) => {
+      const [gradeA, sectionA] = [a.replace(/\s[A-D]$/, ''), a.at(-1) ?? '']
+      const [gradeB, sectionB] = [b.replace(/\s[A-D]$/, ''), b.at(-1) ?? '']
+      return SCHOOL_LEVELS.indexOf(gradeA as any) - SCHOOL_LEVELS.indexOf(gradeB as any) || sectionA.localeCompare(sectionB)
+    })
+  }, [divisionFilter, gradeFilter, officialRoster])
 
   const rosterByClass = useMemo(() => {
     return filteredRoster.reduce<Record<string, AdminStudentRecord[]>>((groups, student) => {
@@ -486,7 +514,11 @@ const AdminSectionView = ({
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {divisionSummary.map((division) => (
-            <button key={division.id} className="rounded-2xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-kcs-blue-200 hover:bg-kcs-blue-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50 dark:hover:bg-kcs-blue-900" onClick={() => setGradeFilter('All')}>
+            <button key={division.id} className={`rounded-2xl border bg-white p-4 text-left transition-colors hover:border-kcs-blue-200 hover:bg-kcs-blue-50 dark:bg-kcs-blue-900/50 dark:hover:bg-kcs-blue-900 ${divisionFilter === division.id ? 'border-kcs-blue-400 ring-2 ring-kcs-blue-100 dark:border-kcs-blue-400 dark:ring-kcs-blue-900' : 'border-gray-100 dark:border-kcs-blue-800'}`} onClick={() => {
+              setDivisionFilter(division.id)
+              setGradeFilter('All')
+              setClassFilter('All')
+            }}>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{division.levels}</p>
                 <GraduationCap size={17} className="text-kcs-blue-600 dark:text-kcs-blue-300" />
@@ -500,6 +532,33 @@ const AdminSectionView = ({
           ))}
         </div>
 
+        <div className="rounded-2xl border border-kcs-blue-100 bg-white p-4 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Student Actions</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Create, delete, filter by division, then open any class to inspect students one by one.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className={adminButton} onClick={openCreateStudentForm}><UserPlus size={16} className="inline" /> Create student</button>
+              <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700" onClick={() => deleteOfficialStudent(selectedStudent)}><Trash2 size={16} className="inline" /> Delete selected</button>
+              <button className={adminOutlineButton} onClick={() => {
+                setDivisionFilter('All')
+                setGradeFilter('All')
+                setClassFilter('All')
+                setStudentQuery('')
+              }}>View all students</button>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === 'All' ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 dark:bg-kcs-blue-800 dark:text-gray-200'}`} onClick={() => setClassFilter('All')}>All classes</button>
+            {classDirectory.map((className) => (
+              <button key={className} className={`rounded-full px-3 py-1.5 text-xs font-bold ${classFilter === className ? 'bg-kcs-blue-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-kcs-blue-50 dark:bg-kcs-blue-800 dark:text-gray-200 dark:hover:bg-kcs-blue-700'}`} onClick={() => setClassFilter(className)}>
+                {className}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -509,16 +568,28 @@ const AdminSectionView = ({
               </div>
               <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-bold ${apiSynced ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'}`}>{apiSynced ? 'Live API synced' : 'Local control mode'}</span>
             </div>
-            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px]">
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_180px_180px]">
               <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 dark:border-kcs-blue-700 dark:bg-kcs-blue-950">
                 <Search size={16} className="text-gray-400" />
                 <input value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none dark:text-white" placeholder="Search name, number, parent, grade, section" />
               </label>
-              <select value={gradeFilter} onChange={(event) => setGradeFilter(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+              <select value={gradeFilter} onChange={(event) => {
+                setGradeFilter(event.target.value)
+                setClassFilter('All')
+              }} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
                 <option>All</option>
                 {SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}
               </select>
+              <select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                <option>All</option>
+                {classDirectory.map((className) => <option key={className}>{className}</option>)}
+              </select>
             </div>
+            {filteredRoster.length === 0 && (
+              <div className="rounded-2xl border border-yellow-100 bg-yellow-50 p-5 text-sm font-semibold text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/10 dark:text-yellow-300">
+                No students match this class filter yet. Use Create student above to add one directly into this class.
+              </div>
+            )}
             <div className="space-y-4">
               {Object.entries(rosterByClass).map(([className, classStudents]) => {
                 const classAttendance = Math.round(classStudents.reduce((sum, student) => sum + student.attendance, 0) / classStudents.length)
@@ -572,7 +643,7 @@ const AdminSectionView = ({
                 {selectedDiscipline && <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-3 dark:border-yellow-900/40 dark:bg-yellow-900/10"><p className="font-semibold text-yellow-800 dark:text-yellow-300">{selectedDiscipline.category}</p><p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">{selectedDiscipline.followUp}</p></div>}
               </div>
             </div>
-            <div className="rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
+            {showCreateStudent && <div className="rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
               <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create Student + Parent</h3>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Creates the official record and keeps the Super Admin roster updated immediately.</p>
               <div className="mt-4 grid gap-3">
@@ -586,7 +657,7 @@ const AdminSectionView = ({
                 <button className={adminButton} onClick={registerOfficialStudent}><UserPlus size={16} className="inline" /> Create official record</button>
                 {studentNotice && <p className="rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
