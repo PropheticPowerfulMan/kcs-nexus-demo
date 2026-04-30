@@ -371,7 +371,7 @@ const AdminSectionView = ({
   const [classFilter, setClassFilter] = useState('All')
   const [studentNotice, setStudentNotice] = useState('')
   const [apiSynced, setApiSynced] = useState(false)
-  const [showCreateStudent, setShowCreateStudent] = useState(true)
+  const [showCreateStudent, setShowCreateStudent] = useState(false)
   const [selectedTranscriptId, setSelectedTranscriptId] = useState('')
   const [newStudent, setNewStudent] = useState({
     name: '',
@@ -457,6 +457,9 @@ const AdminSectionView = ({
       return next
     })
     setSelectedStudent(finalRecord)
+    setDivisionFilter(getDivisionForGrade(finalRecord.grade).id)
+    setGradeFilter(finalRecord.grade)
+    setClassFilter(`${finalRecord.grade} ${finalRecord.section}`)
     setNewStudent({ name: '', studentNumber: '', grade: 'Grade 1', section: 'A', parent: '', parentEmail: '', parentPhone: '', advisor: '' })
   }
 
@@ -484,8 +487,12 @@ const AdminSectionView = ({
       setNewStudent((item) => ({ ...item, grade, section }))
     } else if (gradeFilter !== 'All') {
       setNewStudent((item) => ({ ...item, grade: gradeFilter }))
+    } else if (divisionFilter !== 'All') {
+      const division = SCHOOL_DIVISIONS.find((item) => item.id === divisionFilter)
+      const firstGrade = division?.id === 'kindergarten' ? 'K1' : division?.id === 'elementary' ? 'Grade 1' : division?.id === 'middle' ? 'Grade 6' : division?.id === 'high' ? 'Grade 9' : 'Grade 1'
+      setNewStudent((item) => ({ ...item, grade: firstGrade }))
     }
-    setShowCreateStudent(true)
+    setShowCreateStudent((value) => !value)
   }
 
   const updateAdmissionStatus = (application: AdminAdmissionRequest, status: AdminAdmissionRequest['status']) => {
@@ -626,6 +633,39 @@ const AdminSectionView = ({
               </button>
             ))}
           </div>
+          {showCreateStudent && (
+            <form className="mt-5 rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30" onSubmit={(event) => {
+              event.preventDefault()
+              registerOfficialStudent()
+            }}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create Student + Parent</h3>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Choose a class above, then create the student directly inside that class.</p>
+                </div>
+                <button type="button" className="w-fit rounded-lg px-3 py-1.5 text-xs font-bold text-kcs-blue-700 hover:bg-white dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800" onClick={() => setShowCreateStudent(false)}>Close</button>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" required />
+                <input value={newStudent.studentNumber} onChange={(event) => setNewStudent((item) => ({ ...item, studentNumber: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student number, optional" />
+                <select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}
+                </select>
+                <select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}
+                </select>
+                <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" required />
+                <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
+                <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
+                <input value={newStudent.advisor} onChange={(event) => setNewStudent((item) => ({ ...item, advisor: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Advisor, optional" />
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="submit" className={adminButton}><UserPlus size={16} className="inline" /> Create official record</button>
+                <span className="text-xs font-semibold text-kcs-blue-700 dark:text-kcs-blue-200">Target class: {newStudent.grade} {newStudent.section}</span>
+              </div>
+              {studentNotice && <p className="mt-3 rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
+            </form>
+          )}
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
@@ -712,21 +752,6 @@ const AdminSectionView = ({
                 {selectedDiscipline && <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-3 dark:border-yellow-900/40 dark:bg-yellow-900/10"><p className="font-semibold text-yellow-800 dark:text-yellow-300">{selectedDiscipline.category}</p><p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">{selectedDiscipline.followUp}</p></div>}
               </div>
             </div>
-            {showCreateStudent && <div className="rounded-2xl border border-kcs-blue-100 bg-kcs-blue-50 p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/30">
-              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Create Student + Parent</h3>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Creates the official record and keeps the Super Admin roster updated immediately.</p>
-              <div className="mt-4 grid gap-3">
-                <input value={newStudent.name} onChange={(event) => setNewStudent((item) => ({ ...item, name: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student full name" />
-                <input value={newStudent.studentNumber} onChange={(event) => setNewStudent((item) => ({ ...item, studentNumber: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Student number, optional" />
-                <div className="grid gap-3 sm:grid-cols-2"><select value={newStudent.grade} onChange={(event) => setNewStudent((item) => ({ ...item, grade: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">{SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}</select><select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select></div>
-                <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" />
-                <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
-                <input value={newStudent.parentPhone} onChange={(event) => setNewStudent((item) => ({ ...item, parentPhone: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent phone" />
-                <input value={newStudent.advisor} onChange={(event) => setNewStudent((item) => ({ ...item, advisor: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Advisor, optional" />
-                <button className={adminButton} onClick={registerOfficialStudent}><UserPlus size={16} className="inline" /> Create official record</button>
-                {studentNotice && <p className="rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
-              </div>
-            </div>}
           </div>
         </div>
       </div>
