@@ -72,15 +72,15 @@ const Header = () => {
     >
       <div className="container-custom">
         <div
-          className={`flex h-16 items-center justify-between gap-2 rounded-2xl px-3 transition-all duration-500 sm:h-[76px] sm:gap-3 sm:rounded-full sm:px-4 ${
+          className={`flex h-[68px] items-center justify-between gap-2 rounded-[34px] px-2.5 pr-3 transition-all duration-500 sm:h-[76px] sm:gap-3 sm:rounded-[38px] sm:px-3.5 md:px-4 ${
             scrolled || !isHomePage
               ? 'github-glass dark:github-glass-dark'
               : 'border border-white/20 bg-kcs-blue-950/26 shadow-kcs backdrop-blur-2xl'
           }`}
         >
           {/* Logo */}
-          <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-3">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white p-1 shadow-kcs ring-1 ring-kcs-blue-700/20 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg">
+          <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-2.5 rounded-full pr-1 transition-colors hover:bg-white/10 sm:gap-3 sm:pr-2">
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-white p-1 shadow-kcs ring-4 ring-white/35 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-kcs-lg sm:h-16 sm:w-16 dark:ring-kcs-blue-900/45">
               <img
                 src={logoSrc}
                 alt="Kinshasa Christian School"
@@ -205,10 +205,10 @@ const Header = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 lg:hidden ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 lg:hidden ${
                 scrolled || !isHomePage
-                  ? 'text-kcs-blue-800 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
-                  : 'text-white hover:bg-white/10'
+                  ? 'border-kcs-blue-100 bg-white/65 text-kcs-blue-800 shadow-sm hover:bg-kcs-blue-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/40 dark:text-gray-200 dark:hover:bg-white/10'
+                  : 'border-white/20 bg-white/10 text-white shadow-sm hover:bg-white/15'
               }`}
               aria-label={mobileOpen ? t('common.close') : t('nav.portal')}
             >
@@ -229,36 +229,38 @@ const Header = () => {
             className="lg:hidden overflow-hidden"
           >
             <div className="container-custom py-3">
-              <div ref={mobileMenuRef} className="github-glass dark:github-glass-dark max-h-[calc(100dvh-92px)] space-y-1 overflow-y-auto rounded-[24px] p-3 sm:rounded-[28px]">
+              <div ref={mobileMenuRef} className="github-glass dark:github-glass-dark max-h-[calc(100dvh-96px)] space-y-1 overflow-y-auto rounded-[30px] p-2.5 shadow-2xl shadow-kcs-blue-950/15 sm:rounded-[34px] sm:p-3">
               {navItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
-                    `flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                    `flex min-h-12 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                       isActive
-                        ? 'bg-kcs-blue-700 text-white'
+                        ? 'bg-kcs-blue-700 text-white shadow-kcs'
                         : 'text-kcs-blue-900 dark:text-gray-200 hover:bg-kcs-blue-50 dark:hover:bg-white/10'
                     }`
                   }
                 >
-                  <Icon size={18} />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-kcs-blue-700 shadow-sm dark:bg-kcs-blue-950 dark:text-kcs-blue-200">
+                    <Icon size={17} />
+                  </span>
                   {label}
                 </NavLink>
               ))}
 
-              <div className="pt-3 mt-3 border-t border-gray-100 dark:border-kcs-blue-800 flex gap-2">
+              <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3 dark:border-kcs-blue-800">
                 {isAuthenticated ? (
-                  <Link to={dashboardPath} onClick={() => setMobileOpen(false)} className="flex-1 btn-primary text-center text-sm py-2.5">
+                  <Link to={dashboardPath} onClick={() => setMobileOpen(false)} className="flex-1 rounded-2xl bg-kcs-blue-700 px-4 py-3 text-center text-sm font-bold text-white shadow-kcs">
                     {t('nav.dashboard')}
                   </Link>
                 ) : (
                   <>
-                    <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 btn-primary text-center text-sm py-2.5">
+                    <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 rounded-2xl bg-kcs-blue-700 px-4 py-3 text-center text-sm font-bold text-white shadow-kcs">
                       {t('nav.login')}
                     </Link>
-                    <Link to="/admissions" onClick={() => setMobileOpen(false)} className="flex-1 rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-center text-sm font-bold text-white">
+                    <Link to="/admissions" onClick={() => setMobileOpen(false)} className="flex-1 rounded-2xl bg-kcs-gold-500 px-4 py-3 text-center text-sm font-bold text-kcs-blue-950 shadow-kcs">
                       {t('nav.applyNow')}
                     </Link>
                   </>
