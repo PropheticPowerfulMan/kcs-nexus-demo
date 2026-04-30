@@ -83,6 +83,9 @@ const recentActivity = [
   'News post on science fair produced 1,240 page views in 48 hours.',
 ]
 
+const SCHOOL_NAME = 'Kinshasa Christian School'
+const SCHOOL_LOGO_SRC = `${import.meta.env.BASE_URL}images/kcs-logo.png`
+
 const liveEventControls = [
   { title: 'Spring Arts Festival', status: 'Live now', platform: 'YouTube Live', audience: '312 viewers', nextStep: 'Monitor comments and stream health' },
   { title: 'Annual Sports Day', status: 'Scheduled', platform: 'KCS Live', audience: 'May 10, 8:00 AM', nextStep: 'Confirm camera crew and field audio' },
@@ -826,9 +829,12 @@ const AdminSectionView = ({
       <div className="space-y-6">
         <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-bold text-kcs-blue-900 dark:text-white">Grade 9-12 Transcript Center</h2>
+            <div className="flex items-center gap-3">
+              <img src={SCHOOL_LOGO_SRC} alt={`${SCHOOL_NAME} logo`} className="h-12 w-12 rounded-xl object-contain ring-1 ring-kcs-blue-100 dark:ring-kcs-blue-800" />
+              <div>
+              <h2 className="font-bold text-kcs-blue-900 dark:text-white">{SCHOOL_NAME} Transcript Center</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Official high-school transcript generated from Grade 9-12 bulletin averages, credits, GPA, rank, and graduation status.</p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <button className={adminButton} onClick={() => window.print()}>Print official transcript</button>
@@ -866,13 +872,17 @@ const AdminSectionView = ({
             })}
           </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <img src={SCHOOL_LOGO_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute right-6 top-28 hidden h-48 w-48 object-contain opacity-[0.04] sm:block" />
             <div className="border-b border-gray-100 pb-5 dark:border-kcs-blue-800">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-kcs-blue-100 bg-white p-2 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-950">
+                    <img src={SCHOOL_LOGO_SRC} alt={`${SCHOOL_NAME} logo`} className="h-full w-full object-contain" />
+                  </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wide text-kcs-gold-600 dark:text-kcs-gold-300">Official Academic Transcript</p>
-                    <h3 className="mt-1 font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">Kingdom Christian School</h3>
+                    <h3 className="mt-1 font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{SCHOOL_NAME}</h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Grade 9-12 cumulative high-school record</p>
                   </div>
                 </div>
