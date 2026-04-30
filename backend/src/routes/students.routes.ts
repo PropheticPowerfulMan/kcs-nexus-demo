@@ -27,7 +27,7 @@ const createStudentSchema = z.object({
     email: z.string().email().optional(),
     studentNumber: z.string().min(2),
     grade: z.enum(schoolLevels),
-    section: z.string().min(1).default('A'),
+    section: z.string().default(''),
   }),
 })
 
@@ -76,7 +76,7 @@ studentsRouter.post('/', authenticate, requireRoles('admin'), asyncHandler(async
           create: {
             studentNumber: student.studentNumber,
             grade: student.grade,
-            section: student.section,
+            section: student.section || '',
             status: 'active',
             gpa: 0,
             attendanceRate: 100,

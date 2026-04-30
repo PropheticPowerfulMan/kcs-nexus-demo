@@ -151,7 +151,19 @@ type AdminAdmissionRequest = {
 
 const ADMIN_ADMISSIONS_STORAGE_KEY = 'kcs-admin-admission-submissions'
 const ADMIN_ROSTER_STORAGE_KEY = 'kcs-admin-official-roster'
-const CLASS_SECTIONS = ['A', 'B', 'C', 'D'] as const
+const CLASS_SECTIONS = ['', 'A', 'B', 'C', 'D'] as const
+
+const formatClassName = (grade: string, section?: string) => [grade, section].filter(Boolean).join(' ')
+
+const splitClassName = (className: string) => {
+  const match = className.match(/^(.*?)(?:\s([A-D]))?$/)
+  return {
+    grade: match?.[1] || className,
+    section: match?.[2] || '',
+  }
+}
+
+const sectionLabel = (section?: string) => section || 'No section'
 
 const getDivisionForGrade = (grade: string) => {
   return SCHOOL_DIVISIONS.find((division) => {
@@ -184,7 +196,7 @@ const apiProfileToRosterRecord = (profile: any): AdminStudentRecord => {
     name: fullName,
     studentNumber: profile.studentNumber,
     grade: profile.grade,
-    section: profile.section,
+    section: profile.section ?? '',
     parent: parent ? [parent.firstName, parent.lastName].filter(Boolean).join(' ') : 'Parent record pending',
     parentEmail: parent?.email ?? `${fullName.toLowerCase().replace(/\W+/g, '.')}@family.kcs.test`,
     parentPhone: parent?.phone ?? '+243 810 000 000',
@@ -317,7 +329,7 @@ const createStudentFromAdmission = (application: AdminAdmissionRequest): AdminSt
   name: application.studentName,
   studentNumber: application.applicationNumber,
   grade: application.gradeApplying,
-  section: 'A',
+  section: '',
   parent: application.parentName,
   parentEmail: application.parentEmail,
   parentPhone: application.parentPhone,
@@ -377,7 +389,7 @@ const AdminSectionView = ({
     name: '',
     studentNumber: '',
     grade: 'Grade 1',
-    section: 'A',
+    section: '',
     parent: '',
     parentEmail: '',
     parentPhone: '',
@@ -459,8 +471,8 @@ const AdminSectionView = ({
     setSelectedStudent(finalRecord)
     setDivisionFilter(getDivisionForGrade(finalRecord.grade).id)
     setGradeFilter(finalRecord.grade)
-    setClassFilter(`${finalRecord.grade} ${finalRecord.section}`)
-    setNewStudent({ name: '', studentNumber: '', grade: 'Grade 1', section: 'A', parent: '', parentEmail: '', parentPhone: '', advisor: '' })
+    setClassFilter(formatClassName(finalRecord.grade, finalRecord.section))
+    setNewStudent({ name: '', studentNumber: '', grade: 'Grade 1', section: '', parent: '', parentEmail: '', parentPhone: '', advisor: '' })
   }
 
   const deleteOfficialStudent = async (student: AdminStudentRecord) => {
@@ -482,8 +494,7 @@ const AdminSectionView = ({
 
   const openCreateStudentForm = () => {
     if (classFilter !== 'All') {
-      const section = classFilter.at(-1) ?? 'A'
-      const grade = classFilter.replace(/\s[A-D]$/, '')
+      const { grade, section } = splitClassName(classFilter)
       setNewStudent((item) => ({ ...item, grade, section }))
     } else if (gradeFilter !== 'All') {
       setNewStudent((item) => ({ ...item, grade: gradeFilter }))
@@ -527,7 +538,7 @@ const AdminSectionView = ({
     return officialRoster
       .filter((student) => divisionFilter === 'All' || getDivisionForGrade(student.grade).id === divisionFilter)
       .filter((student) => gradeFilter === 'All' || student.grade === gradeFilter)
-      .filter((student) => classFilter === 'All' || `${student.grade} ${student.section}` === classFilter)
+      .filter((student) => classFilter === 'All' || formatClassName(student.grade, student.section) === classFilter)
       .filter((student) => {
         if (!query) return true
         return [student.name, student.studentNumber, student.grade, student.section, student.parent, student.parentEmail]
@@ -543,17 +554,17 @@ const AdminSectionView = ({
     const classes = officialRoster
       .filter((student) => divisionFilter === 'All' || getDivisionForGrade(student.grade).id === divisionFilter)
       .filter((student) => gradeFilter === 'All' || student.grade === gradeFilter)
-      .map((student) => `${student.grade} ${student.section}`)
+      .map((student) => formatClassName(student.grade, student.section))
     return Array.from(new Set(classes)).sort((a, b) => {
-      const [gradeA, sectionA] = [a.replace(/\s[A-D]$/, ''), a.at(-1) ?? '']
-      const [gradeB, sectionB] = [b.replace(/\s[A-D]$/, ''), b.at(-1) ?? '']
+      const { grade: gradeA, section: sectionA } = splitClassName(a)
+      const { grade: gradeB, section: sectionB } = splitClassName(b)
       return SCHOOL_LEVELS.indexOf(gradeA as any) - SCHOOL_LEVELS.indexOf(gradeB as any) || sectionA.localeCompare(sectionB)
     })
   }, [divisionFilter, gradeFilter, officialRoster])
 
   const rosterByClass = useMemo(() => {
     return filteredRoster.reduce<Record<string, AdminStudentRecord[]>>((groups, student) => {
-      const key = `${student.grade} ${student.section}`
+      const key = formatClassName(student.grade, student.section)
       groups[key] = [...(groups[key] ?? []), student]
       return groups
     }, {})
@@ -652,7 +663,7 @@ const AdminSectionView = ({
                   {SCHOOL_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}
                 </select>
                 <select value={newStudent.section} onChange={(event) => setNewStudent((item) => ({ ...item, section: event.target.value }))} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
-                  {CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}
+                  {CLASS_SECTIONS.map((section) => <option key={section || 'none'} value={section}>{sectionLabel(section)}</option>)}
                 </select>
                 <input value={newStudent.parent} onChange={(event) => setNewStudent((item) => ({ ...item, parent: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent / guardian full name" required />
                 <input value={newStudent.parentEmail} onChange={(event) => setNewStudent((item) => ({ ...item, parentEmail: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white" placeholder="Parent email" />
@@ -661,7 +672,7 @@ const AdminSectionView = ({
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button type="submit" className={adminButton}><UserPlus size={16} className="inline" /> Create official record</button>
-                <span className="text-xs font-semibold text-kcs-blue-700 dark:text-kcs-blue-200">Target class: {newStudent.grade} {newStudent.section}</span>
+                <span className="text-xs font-semibold text-kcs-blue-700 dark:text-kcs-blue-200">Target class: {formatClassName(newStudent.grade, newStudent.section)}</span>
               </div>
               {studentNotice && <p className="mt-3 rounded-xl bg-white p-3 text-sm font-semibold text-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-100">{studentNotice}</p>}
             </form>
@@ -738,7 +749,7 @@ const AdminSectionView = ({
           </div>
           <div className="space-y-6">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-kcs-blue-900 dark:text-white">Individual Evolution</h2><p className="text-sm text-gray-500 dark:text-gray-400">{selectedStudent.grade} {selectedStudent.section} - {selectedStudent.status}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(selectedStudent))}`}>{getStudentRisk(selectedStudent)}</span></div>
+              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-kcs-blue-900 dark:text-white">Individual Evolution</h2><p className="text-sm text-gray-500 dark:text-gray-400">{formatClassName(selectedStudent.grade, selectedStudent.section)} - {selectedStudent.status}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pillTone(getStudentRisk(selectedStudent))}`}>{getStudentRisk(selectedStudent)}</span></div>
               <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-kcs-blue-800/30"><p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.name}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{selectedStudent.studentNumber ?? 'No student number'} - advisor: {selectedStudent.advisor ?? selectedInsight?.advisor ?? 'Advisor pending'}</p></div>
               <div className="mt-4 h-52"><ResponsiveContainer width="100%" height="100%"><BarChart data={selectedTrend}><CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" /><XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={11} /><YAxis domain={[50, 100]} tickLine={false} axisLine={false} fontSize={11} /><Tooltip /><Bar dataKey="score" fill="#1d4ed8" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className={`font-bold ${scoreTone(selectedStudent.gpa, 'gpa')}`}>{selectedStudent.gpa}</p><p className="text-xs text-gray-400">GPA</p></div><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className={`font-bold ${scoreTone(selectedStudent.attendance, 'attendance')}`}>{selectedStudent.attendance}%</p><p className="text-xs text-gray-400">Attendance</p></div><div className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-bold text-kcs-blue-900 dark:text-white">{selectedStudent.discipline}</p><p className="text-xs text-gray-400">Discipline</p></div></div>
@@ -748,7 +759,7 @@ const AdminSectionView = ({
               <div className="mb-4 flex items-center justify-between"><h3 className="font-bold text-kcs-blue-900 dark:text-white">Live School Signals</h3><BarChart3 size={17} className="text-kcs-gold-500" /></div>
               <div className="space-y-3">
                 {(selectedGrades.length ? selectedGrades : [{ subject: 'Class average', assessment: 'Current term estimate', score: Math.round(selectedStudent.gpa * 25), max: 100, date: 'Now', teacher: selectedStudent.advisor ?? 'Advisor' }]).slice(0, 3).map((item) => <div key={`${item.subject}-${item.assessment}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-kcs-blue-900 dark:text-white">{item.subject}</p><span className="font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{item.score}/{item.max}</span></div><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.assessment} - {item.teacher}</p></div>)}
-                {(selectedAttendanceEvents.length ? selectedAttendanceEvents : [{ date: 'Current term', status: selectedStudent.attendance >= 94 ? 'present' : 'watch', className: `${selectedStudent.grade}${selectedStudent.section}` }]).slice(0, 2).map((item) => <div key={`${item.date}-${item.status}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-semibold capitalize text-kcs-blue-900 dark:text-white">{item.status}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.date} - {item.className}</p></div>)}
+                {(selectedAttendanceEvents.length ? selectedAttendanceEvents : [{ date: 'Current term', status: selectedStudent.attendance >= 94 ? 'present' : 'watch', className: formatClassName(selectedStudent.grade, selectedStudent.section) }]).slice(0, 2).map((item) => <div key={`${item.date}-${item.status}`} className="rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30"><p className="font-semibold capitalize text-kcs-blue-900 dark:text-white">{item.status}</p><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.date} - {item.className}</p></div>)}
                 {selectedDiscipline && <div className="rounded-xl border border-yellow-100 bg-yellow-50 p-3 dark:border-yellow-900/40 dark:bg-yellow-900/10"><p className="font-semibold text-yellow-800 dark:text-yellow-300">{selectedDiscipline.category}</p><p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">{selectedDiscipline.followUp}</p></div>}
               </div>
             </div>
@@ -788,7 +799,7 @@ const AdminSectionView = ({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{student.grade} {student.section} - {student.studentNumber ?? 'No student number'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatClassName(student.grade, student.section)} - {student.studentNumber ?? 'No student number'}</p>
                     </div>
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillTone(transcript?.status ?? generated.graduationStatus)}`}>{transcript?.status ?? generated.graduationStatus}</span>
                   </div>
@@ -1604,7 +1615,7 @@ const AdminDashboard = () => {
                       <p className="font-semibold text-kcs-blue-900 dark:text-white">{student.name}</p>
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${pillTone(student.discipline)}`}>{student.discipline}</span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{student.grade} {student.section} - GPA {student.gpa} - attendance {student.attendance}% - parent: {student.parent}</p>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{formatClassName(student.grade, student.section)} - GPA {student.gpa} - attendance {student.attendance}% - parent: {student.parent}</p>
                   </div>
                 ))}
               </div>

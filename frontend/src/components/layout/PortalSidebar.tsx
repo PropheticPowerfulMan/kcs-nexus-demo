@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, BookOpen, FileText, Calendar, Brain,
-  Users, Settings, Bell, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen,
+  Users, Settings, Bell, ChevronLeft, ChevronRight, PanelLeftClose,
   GraduationCap, BarChart3, MessageSquare, LogOut,
   Shield, Home, UserCheck, ClipboardList, Image, LibraryBig, Menu, X, Megaphone, FileSpreadsheet, WalletCards, ClipboardCheck, AlertTriangle
 } from 'lucide-react'
@@ -107,13 +107,17 @@ const PortalSidebar = () => {
     sidebarOpen,
     toggleSidebar,
     toggleSidebarCollapse,
-    toggleSidebarHidden,
     setSidebarOpen,
+    setSidebarHidden,
   } = useUIStore()
 
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname, setSidebarOpen])
+
+  useEffect(() => {
+    if (sidebarHidden) setSidebarHidden(false)
+  }, [sidebarHidden, setSidebarHidden])
 
   if (!user) return null
 
@@ -254,19 +258,8 @@ const PortalSidebar = () => {
         )}
       </AnimatePresence>
 
-      {sidebarHidden && (
-        <button
-          onClick={toggleSidebarHidden}
-          className="fixed left-3 top-4 z-40 hidden h-10 w-10 items-center justify-center rounded-xl border border-kcs-blue-100 bg-white text-kcs-blue-700 shadow-kcs transition-colors hover:bg-kcs-blue-50 dark:border-kcs-blue-800 dark:bg-kcs-blue-950 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-900/70 lg:flex"
-          aria-label="Show sidebar"
-          title="Show sidebar"
-        >
-          <PanelLeftOpen size={18} />
-        </button>
-      )}
-
       <AnimatePresence initial={false}>
-        {!sidebarHidden && (
+        {(
     <motion.aside
       animate={{ width: sidebarCollapsed ? 72 : 260 }}
       initial={{ width: 0, opacity: 0 }}
@@ -302,10 +295,10 @@ const PortalSidebar = () => {
         </Link>
         {!sidebarCollapsed && (
           <button
-            onClick={toggleSidebarHidden}
+            onClick={toggleSidebarCollapse}
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-colors hover:bg-kcs-blue-50 hover:text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-gray-300 dark:hover:bg-kcs-blue-800"
-            aria-label="Hide sidebar"
-            title="Hide sidebar"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
           >
             <PanelLeftClose size={16} />
           </button>
