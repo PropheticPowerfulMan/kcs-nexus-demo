@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')
 
 export const api = axios.create({
   baseURL: API_BASE,
@@ -17,6 +17,9 @@ api.interceptors.request.use(
     const token = useAuthStore.getState().token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
     }
     return config
   },
@@ -145,7 +148,7 @@ export const admissionsAPI = {
   getById: (id: string) => api.get(`/admissions/${id}`),
   getByNumber: (number: string) => api.get(`/admissions/track/${number}`),
   create: (data: object | FormData) =>
-    api.post('/admissions', data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+    api.post('/admissions', data),
   updateStatus: (id: string, status: string, notes?: string) =>
     api.patch(`/admissions/${id}/status`, { status, notes }),
   uploadDocument: (id: string, formData: FormData) =>

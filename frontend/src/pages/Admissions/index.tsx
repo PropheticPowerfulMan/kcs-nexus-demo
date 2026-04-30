@@ -230,8 +230,13 @@ const AdmissionsPage = () => {
       const emailSent = response.data?.data?.emailDelivery?.sent
 
       if (!emailSent) {
-        await sendAdmissionFallbackEmail(applicationNumber, studentData, parentData, notes, documents)
-        setSubmitWarning('Application saved. The school mail server needs SMTP configuration, so a backup email notification was sent to the school address.')
+        try {
+          await sendAdmissionFallbackEmail(applicationNumber, studentData, parentData, notes, documents)
+          setSubmitWarning('Application saved. The school mail server needs SMTP configuration, so a backup email notification was sent to the school address.')
+        } catch (fallbackError) {
+          console.error('Admission backup email failed after API submission:', fallbackError)
+          setSubmitWarning(`Application saved successfully, but the email notification could not be sent automatically. Please contact the school at ${SCHOOL_ADMISSIONS_EMAIL} with your application number.`)
+        }
       }
 
       saveApplicationForAdmin(applicationNumber, studentData, parentData, notes, documents)
