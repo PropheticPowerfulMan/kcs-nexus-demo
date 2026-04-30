@@ -836,9 +836,9 @@ const AdminSectionView = ({
               <p className="text-sm text-gray-500 dark:text-gray-400">Official high-school transcript generated from Grade 9-12 bulletin averages, credits, GPA, rank, and graduation status.</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button className={adminButton} onClick={() => window.print()}>Print official transcript</button>
-              <button className={adminOutlineButton} onClick={() => setSelectedTranscriptId(grade9to12[0]?.id ?? '')}>Reset selection</button>
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <button className={`${adminButton} w-full sm:w-auto`} onClick={() => window.print()}>Print official transcript</button>
+              <button className={`${adminOutlineButton} w-full sm:w-auto`} onClick={() => setSelectedTranscriptId(grade9to12[0]?.id ?? '')}>Reset selection</button>
             </div>
           </div>
         </div>
@@ -876,13 +876,13 @@ const AdminSectionView = ({
             <img src={SCHOOL_LOGO_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute right-6 top-28 hidden h-48 w-48 object-contain opacity-[0.04] sm:block" />
             <div className="border-b border-gray-100 pb-5 dark:border-kcs-blue-800">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-kcs-blue-100 bg-white p-2 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-950">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-kcs-blue-100 bg-white p-2 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-950 sm:h-20 sm:w-20">
                     <img src={SCHOOL_LOGO_SRC} alt={`${SCHOOL_NAME} logo`} className="h-full w-full object-contain" />
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wide text-kcs-gold-600 dark:text-kcs-gold-300">Official Academic Transcript</p>
-                    <h3 className="mt-1 font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{SCHOOL_NAME}</h3>
+                    <h3 className="mt-1 font-display text-xl font-bold text-kcs-blue-900 dark:text-white sm:text-2xl">{SCHOOL_NAME}</h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Grade 9-12 cumulative high-school record</p>
                   </div>
                 </div>
@@ -908,7 +908,32 @@ const AdminSectionView = ({
               ))}
             </div>
 
-            <div className="mt-5 overflow-x-auto">
+            <div className="mt-5 space-y-4 md:hidden">
+              {officialTranscript.rows.map((year) => (
+                <div key={year.grade} className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-kcs-blue-900 dark:text-white">{year.grade}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{year.year} - {year.status}</p>
+                    </div>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">GPA {year.annualGpa}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {year.courses.map((course) => (
+                      <div key={`${year.grade}-${course.course}`} className="rounded-lg bg-white p-3 text-sm dark:bg-kcs-blue-900/60">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-semibold text-kcs-blue-900 dark:text-white">{course.course}</p>
+                          <span className="font-bold text-kcs-blue-700 dark:text-kcs-blue-300">{course.letter}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Credit {course.credit} - Average {course.average}% - GPA {course.gpa}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 hidden overflow-x-auto md:block">
               <table className="min-w-[760px] w-full text-sm">
                 <thead className="text-left text-xs uppercase tracking-wide text-gray-400">
                   <tr className="border-b border-gray-100 dark:border-kcs-blue-800">
