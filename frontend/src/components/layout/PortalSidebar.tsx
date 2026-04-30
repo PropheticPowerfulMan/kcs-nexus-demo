@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { NavLink, Link, useLocation } from 'react-router-dom'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -100,6 +100,7 @@ const getNavItems = (role: UserRole, t: (key: string) => string): NavItem[] => {
 const PortalSidebar = () => {
   const { t } = useTranslation()
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const {
     sidebarCollapsed,
@@ -173,6 +174,7 @@ const PortalSidebar = () => {
           onClick={() => {
             setSidebarOpen(false)
             logout()
+            navigate('/login', { replace: true })
           }}
           className={`sidebar-link ${isMobile ? 'sidebar-link-mobile' : ''} w-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 ${!isMobile && sidebarCollapsed ? 'justify-center px-0' : ''}`}
           title={!isMobile && sidebarCollapsed ? 'Sign Out' : undefined}

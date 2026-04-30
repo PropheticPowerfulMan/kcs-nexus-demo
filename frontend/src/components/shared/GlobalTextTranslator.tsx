@@ -39,19 +39,12 @@ const translateText = (value: string, language: string) => {
 }
 
 const translateNode = (node: Node, language: string) => {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const current = node.textContent ?? ''
-    const next = translateText(current, language)
-    if (next !== current) {
-      node.textContent = next
-    }
-    return
-  }
-
   if (!(node instanceof HTMLElement) || ignoredTags.has(node.tagName) || node.isContentEditable) {
     return
   }
 
+  // Keep React-owned text nodes untouched. Mutating them outside React can crash
+  // route changes with DOM reconciliation errors after logout/login role swaps.
   textAttributes.forEach((attribute) => {
     const value = node.getAttribute(attribute)
     if (value) {
@@ -87,7 +80,6 @@ const GlobalTextTranslator = () => {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
       attributes: true,
       attributeFilter: textAttributes,
     })
