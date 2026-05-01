@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { useAuthStore } from '@/store/authStore'
+import { getAssetUrl } from '@/utils/assets'
 
 const Header = () => {
   const { t, i18n } = useTranslation()
@@ -52,7 +53,7 @@ const Header = () => {
   }
 
   const isHomePage = location.pathname === '/'
-  const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
+  const logoSrc = getAssetUrl('images/kcs.jpg')
   const dashboardPath = user?.role === 'admin' ? '/admin' : `/portal/${user?.role ?? ''}`
 
   const navItems = [

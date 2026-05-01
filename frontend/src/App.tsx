@@ -20,7 +20,6 @@ import AdminDashboard from '@/pages/Admin'
 import SchoolRegistryPage from '@/pages/Admin/SchoolRegistry'
 import ForumInsightsPage from '@/pages/Admin/ForumInsights'
 import StudentForumInsightsPage from '@/pages/Admin/StudentForumInsights'
-import NotFoundPage from '@/pages/NotFound'
 import { useAuthStore } from '@/store/authStore'
 import GlobalTextTranslator from '@/components/shared/GlobalTextTranslator'
 
@@ -254,7 +253,7 @@ const App = () => {
           />
         ))}
 
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </>

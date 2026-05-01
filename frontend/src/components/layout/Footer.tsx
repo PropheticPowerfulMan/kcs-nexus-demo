@@ -5,10 +5,11 @@ import {
   Instagram, Youtube, Linkedin, ArrowRight, BookOpen
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { getAssetUrl } from '@/utils/assets'
 
 const Footer = () => {
   const { t } = useTranslation()
-  const logoSrc = `${import.meta.env.BASE_URL}images/kcs.jpg`
+  const logoSrc = getAssetUrl('images/kcs.jpg')
 
   const quickLinks = [
     { to: '/about', label: t('nav.about') },

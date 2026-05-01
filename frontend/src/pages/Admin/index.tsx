@@ -14,6 +14,7 @@ import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
 import { useAuthStore } from '@/store/authStore'
 import { studentsAPI } from '@/services/api'
 import { SCHOOL_DIVISIONS, SCHOOL_LEVELS } from '@/constants/schoolLevels'
+import { getAssetUrl } from '@/utils/assets'
 import {
   aiRecommendations,
   aiSignals,
@@ -84,7 +85,8 @@ const recentActivity = [
 ]
 
 const SCHOOL_NAME = 'Kinshasa Christian School'
-const SCHOOL_LOGO_SRC = `${import.meta.env.BASE_URL}images/kcs-logo.png`
+
+const SCHOOL_LOGO_SRC = getAssetUrl('images/kcs-logo.png')
 
 const liveEventControls = [
   { title: 'Spring Arts Festival', status: 'Live now', platform: 'YouTube Live', audience: '312 viewers', nextStep: 'Monitor comments and stream health' },
