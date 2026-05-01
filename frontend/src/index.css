@@ -261,6 +261,28 @@
   .portal-shell > main > .sticky:first-child > div {
     align-items: flex-start;
     flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .portal-shell > main > .sticky:first-child {
+    position: static;
+    top: auto;
+  }
+
+  .portal-shell > main > .sticky:first-child > div > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .portal-shell > main > .sticky:first-child h1,
+  .portal-shell > main > .sticky:first-child p {
+    overflow-wrap: anywhere;
+  }
+
+  .portal-shell > main > .sticky:first-child [class*="rounded-2xl"] {
+    width: 100%;
   }
 
   .portal-shell > main > .sticky:first-child .btn-primary,
