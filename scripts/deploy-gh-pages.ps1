@@ -18,6 +18,12 @@ if (-not $repoRoot) {
 
 Set-Location $repoRoot
 
+$originUrl = (& git remote get-url origin).Trim()
+$repoPath = $originUrl
+if ($repoPath -match "github\.com[:/](?<path>[^/]+/[^/.]+)(\.git)?$") {
+  $env:GITHUB_REPOSITORY = $Matches.path
+}
+
 $env:GITHUB_PAGES = "true"
 Push-Location "$repoRoot\frontend"
 try {
@@ -29,6 +35,7 @@ try {
 finally {
   Pop-Location
   Remove-Item Env:\GITHUB_PAGES -ErrorAction SilentlyContinue
+  Remove-Item Env:\GITHUB_REPOSITORY -ErrorAction SilentlyContinue
 }
 
 $worktreePath = Join-Path $repoRoot ".deploy-gh-pages"
@@ -42,7 +49,6 @@ if (Test-Path $worktreePath) {
   Run-Git worktree prune
 }
 
-$originUrl = (& git remote get-url origin).Trim()
 Run-Git clone --branch gh-pages --single-branch $originUrl $worktreePath
 & git -C $worktreePath checkout gh-pages
 if ($LASTEXITCODE -ne 0) {
