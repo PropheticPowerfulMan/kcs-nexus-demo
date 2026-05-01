@@ -93,6 +93,7 @@ const studentActionButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font
 const StudentSectionView = ({ segment }: { segment: string }) => {
   const [localAssignments, setLocalAssignments] = useState(assignments)
   const [messageSent, setMessageSent] = useState(false)
+  const [actionMessage, setActionMessage] = useState('')
 
   if (segment === 'grades') {
     const reportCard = reportCards.find((card) => card.student === 'Elise Kabongo')
@@ -121,8 +122,9 @@ const StudentSectionView = ({ segment }: { segment: string }) => {
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">Current Grades</h2>
-              <button className={studentActionButton}>Download report card</button>
+              <button className={`${studentActionButton} w-full sm:w-auto`} onClick={() => setActionMessage('Report card download prepared for your student file.')}>Download report card</button>
             </div>
+            {actionMessage && <p className="mb-4 rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">{actionMessage}</p>}
             <div className="overflow-x-auto">
               <table className="min-w-[620px] w-full text-sm">
                 <thead className="text-left text-xs text-gray-400">
@@ -173,8 +175,25 @@ const StudentSectionView = ({ segment }: { segment: string }) => {
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">Assignment Center</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Submit work, track deadlines, and keep teachers updated.</p>
             </div>
-            <button className={studentActionButton}>Upload new file</button>
+            <button
+              className={`${studentActionButton} w-full sm:w-auto`}
+              onClick={() => {
+                const nextAssignment = {
+                  id: Date.now(),
+                  title: 'Uploaded student file',
+                  course: 'Teacher review',
+                  due: 'Submitted now',
+                  status: 'submitted',
+                  priority: 'low',
+                }
+                setLocalAssignments((items) => [nextAssignment, ...items])
+                setActionMessage('File uploaded and added to the assignment center for teacher review.')
+              }}
+            >
+              Upload new file
+            </button>
           </div>
+          {actionMessage && <p className="mt-4 rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">{actionMessage}</p>}
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {localAssignments.map((assignment) => (
@@ -190,13 +209,19 @@ const StudentSectionView = ({ segment }: { segment: string }) => {
                 <button
                   className={studentActionButton}
                   disabled={assignment.status === 'submitted' || assignment.status === 'graded'}
-                  onClick={() => setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'submitted' } : item))}
+                  onClick={() => {
+                    setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'submitted' } : item))
+                    setActionMessage(`${assignment.title} submitted successfully.`)
+                  }}
                 >
                   Submit work
                 </button>
                 <button
                   className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-kcs-blue-700 transition-colors hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800"
-                  onClick={() => setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'graded' } : item))}
+                  onClick={() => {
+                    setLocalAssignments((items) => items.map((item) => item.id === assignment.id ? { ...item, status: 'graded' } : item))
+                    setActionMessage(`${assignment.title} marked as reviewed.`)
+                  }}
                 >
                   Mark reviewed
                 </button>
@@ -321,24 +346,24 @@ const StudentPortal = () => {
     <div className="portal-shell flex">
       <PortalSidebar />
 
-      <main>
+      <main className="min-w-0 flex-1">
         {/* Top Bar */}
-        <div className="sticky top-0 z-20 bg-white/80 dark:bg-kcs-blue-950/80 backdrop-blur-md border-b border-gray-100 dark:border-kcs-blue-800 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold font-display text-kcs-blue-900 dark:text-white">
+        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 px-4 py-3 backdrop-blur-md dark:border-kcs-blue-800 dark:bg-kcs-blue-950/90 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-lg font-bold text-kcs-blue-900 dark:text-white sm:text-xl">
                 Good morning, {user?.firstName}! 👋
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Link to="/portal/student/ai-tutor" className="btn-gold text-sm py-2 flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
+              <Link to="/portal/student/ai-tutor" className="btn-gold flex flex-1 items-center justify-center gap-2 py-2 text-sm sm:flex-none">
                 <Brain size={16} /> AI Tutor
               </Link>
               <div className="relative">
-                <button className="p-2 rounded-xl bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-kcs-blue-700 transition-colors">
+                <button className="rounded-xl bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-kcs-blue-800 dark:text-gray-300 dark:hover:bg-kcs-blue-700">
                   <Bell size={18} />
                   <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full text-xs" />
                 </button>
@@ -347,7 +372,7 @@ const StudentPortal = () => {
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="space-y-6 p-4 sm:p-6">
           {activeSegment !== 'dashboard' ? (
             <StudentSectionView segment={activeSegment} />
           ) : (

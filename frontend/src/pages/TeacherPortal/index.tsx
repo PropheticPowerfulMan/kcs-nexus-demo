@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import PortalSidebar from '@/components/layout/PortalSidebar'
 import PortalSectionPanel from '@/components/shared/PortalSectionPanel'
+import AdvancedGradebook from '@/components/gradebook/AdvancedGradebook'
+import { studentsAPI } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 import {
   aiSignals,
@@ -74,33 +76,6 @@ const inferGradeLabel = (className: string) => {
   return className
 }
 
-const rosterNames = [
-  'Anne Itela Mouyeke',
-  'Assimbo Loango Grace',
-  'Beni Amisi Ali',
-  'Daniella Sambu',
-  'Dimanyinayi Tshibanda',
-  'Eliane Kazadi Mbuyi',
-  'Ephraim Kiriza',
-  'Exauce Mujiba',
-  'Fatima Abera Merd',
-  'Fortune Nacera',
-  'Gethsemane Osombo',
-  'Ingele Mboyo Camille',
-  "Kabeya N'tumba",
-  'Kenania Ofutanya',
-  'Kenaya Malonda',
-  'LOMANGO WAMUZILA',
-  'Laylay Marcel',
-  'Leyana Badjeme',
-  'Lyz Nzanzuba Nzau',
-  'Mordekai Mutie',
-  'Mualuke Pasuanza',
-  'Ngolu Akande Joel',
-  'Reuel Mbayo Mutombo',
-  'Tshilumbu Mukendi',
-]
-
 const gradingScaleRows = [
   ['99', '100', 'A+'], ['94', '98', 'A'], ['92', '93', 'A-'], ['90', '91', 'B+'],
   ['84', '89', 'B'], ['82', '83', 'B-'], ['80', '81', 'C+'], ['72', '79', 'C'],
@@ -113,6 +88,69 @@ type GradebookColumn = {
   type: string
   date: string
   maxPoints: number
+}
+
+type RegistryStudent = {
+  id: string
+  name: string
+  grade: string
+  section: string
+  parentId?: string
+  advisor?: string
+  average?: number
+  gpa?: number
+  rank?: number
+  attendance?: number
+  risk?: string
+  strengths?: string[]
+  weaknesses?: string[]
+  aiInsight?: string
+}
+
+type StudentProfileResponse = {
+  id: string
+  studentNumber?: string
+  grade: string
+  section?: string
+  gpa?: number | null
+  attendanceRate?: number | null
+  status?: string
+  user?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+  }
+  parentLinks?: Array<{
+    parentId?: string
+    parent?: {
+      id?: string
+    }
+  }>
+}
+
+const toClassKey = (grade: string, section = '') => `${grade}${section}`.replace(/\s+/g, '').toLowerCase()
+
+const mapRegistryStudent = (student: StudentProfileResponse, index: number): RegistryStudent => {
+  const firstName = student.user?.firstName?.trim() ?? ''
+  const lastName = student.user?.lastName?.trim() ?? ''
+  const name = `${firstName} ${lastName}`.trim() || student.studentNumber || `Student ${index + 1}`
+
+  return {
+    id: student.id,
+    name,
+    grade: student.grade,
+    section: student.section ?? '',
+    parentId: student.parentLinks?.[0]?.parentId ?? student.parentLinks?.[0]?.parent?.id,
+    advisor: 'School registry',
+    average: Math.round((student.gpa ?? 0) * 20) || undefined,
+    gpa: student.gpa ?? undefined,
+    rank: index + 1,
+    attendance: student.attendanceRate ?? undefined,
+    risk: student.status === 'active' ? 'low' : 'medium',
+    strengths: [],
+    weaknesses: [],
+    aiInsight: `${name} is loaded from the Super Admin student registry for ${student.grade}${student.section ?? ''}.`,
+  }
 }
 
 const TeacherSectionView = ({ segment }: { segment: string }) => {
@@ -130,60 +168,12 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const meta = sectionTitles[segment] ?? sectionTitles.reports
   const Icon = meta.icon
-  const superAdminStudentPool = useMemo(() => [
-    ...ecosystemStudents,
-    ...rosterNames.map((name, index) => ({
-      id: `stu-11-${index + 1}`,
-      name,
-      grade: 'Grade 11',
-      section: 'A',
-      parentId: `parent-11-${index + 1}`,
-      advisor: 'Dr. Mukendi',
-      average: 70 + (index % 6) * 4,
-      gpa: 2.6 + (index % 5) * 0.2,
-      rank: index + 1,
-      attendance: 88 + (index % 8),
-      risk: index % 7 === 0 ? 'medium' : 'low',
-      strengths: ['Participation', 'Course readiness'],
-      weaknesses: ['Pending teacher notes'],
-      aiInsight: `${name} is part of the official 11th Grade roster and will appear automatically in any 11th Grade subject.`,
-    })),
-    {
-      id: 'stu-grace',
-      name: 'Grace Mwamba',
-      grade: 'Grade 10',
-      section: 'A',
-      parentId: 'parent-mwamba',
-      advisor: 'Mrs. Diallo',
-      average: 84,
-      gpa: 3.3,
-      rank: 11,
-      attendance: 93,
-      risk: 'low',
-      strengths: ['Research notes', 'Peer collaboration'],
-      weaknesses: ['Lab vocabulary'],
-      aiInsight: 'Grace is ready for a science extension project and needs targeted academic vocabulary support.',
-    },
-    {
-      id: 'stu-naomi',
-      name: 'Naomi Kanku',
-      grade: 'Grade 9',
-      section: 'C',
-      parentId: 'parent-kanku',
-      advisor: 'Dr. Mukendi',
-      average: 72,
-      gpa: 2.4,
-      rank: 24,
-      attendance: 84,
-      risk: 'high',
-      strengths: ['Curiosity', 'Practical labs'],
-      weaknesses: ['Attendance rhythm', 'Written explanations'],
-      aiInsight: 'Naomi needs an attendance intervention, short written-response practice, and weekly parent check-ins.',
-    },
-  ], [])
+  const [superAdminStudentPool, setSuperAdminStudentPool] = useState<RegistryStudent[]>([])
+  const [registryStatus, setRegistryStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
-  const getStudentGradeLabel = (student: { grade: string; section: string }) => inferGradeLabel(`${student.grade}${student.section}`)
-  const getRosterForGrade = (grade: string) => superAdminStudentPool.filter((student) => getStudentGradeLabel(student) === grade)
+  const getRosterForClass = (className: string) => superAdminStudentPool.filter((student) => (
+    toClassKey(student.grade, student.section) === toClassKey(className) || inferGradeLabel(`${student.grade}${student.section}`) === className
+  ))
 
   const [actionMessage, setActionMessage] = useState('')
   const [courses, setCourses] = useState(() =>
@@ -194,7 +184,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
         abbreviation: subject.name.split(' ').map((word) => word[0]).join('').slice(0, 6).toUpperCase(),
         creditHours: index === 1 ? 4 : index === 0 ? 3 : 2,
         gradeLevels: [gradeLevel],
-        studentIds: getRosterForGrade(gradeLevel).map((student) => student.id),
+        studentIds: [] as string[],
         status: 'active',
       }
     }),
@@ -206,13 +196,13 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const [selectedGradebookCourseId, setSelectedGradebookCourseId] = useState(subjects[1].id)
   const [gradebookColumnsByCourse, setGradebookColumnsByCourse] = useState<Record<string, GradebookColumn[]>>({})
   const [gradebookScores, setGradebookScores] = useState<Record<string, string>>({})
-  const [teacherStudents, setTeacherStudents] = useState(() => ecosystemStudents)
+  const [teacherStudents, setTeacherStudents] = useState<RegistryStudent[]>(() => ecosystemStudents)
   const [attendanceEntries, setAttendanceEntries] = useState(() => ecosystemAttendance)
   const [assignmentList, setAssignmentList] = useState(() => ecosystemAssignments)
   const [gradeEntries, setGradeEntries] = useState(() => ecosystemGrades)
   const [reportList, setReportList] = useState(() => reportCards)
   const [disciplineList, setDisciplineList] = useState(() => disciplineReports)
-  const [reportCardStudentId, setReportCardStudentId] = useState(superAdminStudentPool[0].id)
+  const [reportCardStudentId, setReportCardStudentId] = useState('')
   const [reportCardTerm, setReportCardTerm] = useState('Term 3')
   const [reportCardRows, setReportCardRows] = useState(() =>
     subjects.slice(0, 4).map((subject, index) => ({
@@ -253,17 +243,17 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     className: 'Grade 10A',
     room: 'Lab 2',
     gradeLevels: ['10th Grade'],
-    studentId: superAdminStudentPool[0].id,
+    studentId: '',
   })
-  const [selectedStudentId, setSelectedStudentId] = useState(superAdminStudentPool[0].id)
+  const [selectedStudentId, setSelectedStudentId] = useState('')
   const [attendanceDraft, setAttendanceDraft] = useState({
-    studentId: superAdminStudentPool[0].id,
+    studentId: '',
     date: 'Apr 29',
     status: 'present',
     className: 'Grade 11A',
   })
   const [assignmentDraft, setAssignmentDraft] = useState({
-    studentId: superAdminStudentPool[0].id,
+    studentId: '',
     title: 'Exit ticket reflection',
     subject: 'AP Biology',
     due: 'Tomorrow',
@@ -271,7 +261,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     priority: 'medium',
   })
   const [gradeDraft, setGradeDraft] = useState({
-    studentId: superAdminStudentPool[0].id,
+    studentId: '',
     subject: 'AP Biology',
     assessment: 'Quick Check',
     score: 88,
@@ -279,14 +269,14 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
     date: 'Apr 29',
   })
   const [reportDraft, setReportDraft] = useState({
-    student: superAdminStudentPool[0].name,
+    student: '',
     term: 'Term 3',
     average: 88,
     conduct: 'Good',
     teacherComment: 'Shows steady progress and responds well to targeted feedback.',
   })
   const [disciplineDraft, setDisciplineDraft] = useState({
-    studentId: superAdminStudentPool[1].id,
+    studentId: '',
     category: 'Classroom conduct',
     incident: 'Needs a documented follow-up after repeated disruption during group activity.',
     actionTaken: 'Teacher conference completed and behavior target assigned.',
@@ -307,6 +297,53 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const findStudent = (studentId: string) => superAdminStudentPool.find((student) => student.id === studentId)
   const runAction = (message: string) => setActionMessage(message)
+
+  useEffect(() => {
+    let active = true
+
+    const loadStudents = async () => {
+      setRegistryStatus('loading')
+      try {
+        const response = await studentsAPI.getAll()
+        const registryStudents = (response.data?.data ?? []).map(mapRegistryStudent)
+        if (!active) return
+        setSuperAdminStudentPool(registryStudents)
+        setRegistryStatus('ready')
+      } catch {
+        if (!active) return
+        setSuperAdminStudentPool([])
+        setRegistryStatus('error')
+      }
+    }
+
+    loadStudents()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    setCourses((current) => current.map((course) => ({
+      ...course,
+      studentIds: getRosterForClass(course.className || course.gradeLevels[0]).map((student) => student.id),
+    })))
+  }, [superAdminStudentPool])
+
+  useEffect(() => {
+    const firstStudent = superAdminStudentPool[0]
+    if (!firstStudent) return
+
+    setSelectedStudentId((current) => current || firstStudent.id)
+    setReportCardStudentId((current) => current || firstStudent.id)
+    setTeacherStudents((current) => current.length ? current : superAdminStudentPool)
+    setAttendanceDraft((draft) => ({ ...draft, studentId: draft.studentId || firstStudent.id }))
+    setAssignmentDraft((draft) => ({ ...draft, studentId: draft.studentId || firstStudent.id }))
+    setGradeDraft((draft) => ({ ...draft, studentId: draft.studentId || firstStudent.id }))
+    setReportDraft((draft) => ({ ...draft, student: draft.student || firstStudent.name }))
+    setDisciplineDraft((draft) => ({ ...draft, studentId: draft.studentId || superAdminStudentPool[1]?.id || firstStudent.id }))
+    setCourseDraft((draft) => ({ ...draft, studentId: draft.studentId || firstStudent.id }))
+  }, [superAdminStudentPool])
   const reportCardStudent = findStudent(reportCardStudentId)
   const reportCardAverage = useMemo(() => {
     const totalWeightedPoints = reportCardRows.reduce((sum, row) => sum + (row.points / Math.max(row.maxPoints, 1)) * 100 * row.coefficient, 0)
@@ -341,6 +378,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   }
 
   const resetCourseDraft = () => {
+    const firstStudentId = superAdminStudentPool[0]?.id ?? ''
     setEditingCourseId(null)
     setCourseDraft({
       name: 'Integrated Science Lab',
@@ -349,7 +387,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       className: 'Grade 10A',
       room: 'Lab 2',
       gradeLevels: ['10th Grade'],
-      studentId: superAdminStudentPool[0].id,
+      studentId: firstStudentId,
     })
   }
 
@@ -380,7 +418,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
 
   const createCourse = () => {
     const selectedGrade = courseDraft.gradeLevels[0] ?? '10th Grade'
-    const roster = getRosterForGrade(selectedGrade)
+    const roster = getRosterForClass(courseDraft.className || selectedGrade)
     const nextCourse = {
       id: editingCourseId ?? `course-${Date.now()}`,
       name: courseDraft.name,
@@ -414,7 +452,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
       className: course.className,
       room: course.room,
       gradeLevels: course.gradeLevels,
-      studentId: course.studentIds[0] ?? superAdminStudentPool[0].id,
+      studentId: course.studentIds[0] ?? superAdminStudentPool[0]?.id ?? '',
     })
     runAction(`${course.name} loaded for editing.`)
   }
@@ -578,6 +616,46 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
   const panelClass = 'rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50'
   const compactButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800'
 
+  if (segment === 'grades') {
+    return (
+      <section className="space-y-6">
+        <div className="rounded-2xl border border-kcs-blue-100 bg-white p-5 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">
+                <Icon size={22} />
+              </div>
+              <div>
+                <h2 className="font-display text-xl font-bold text-kcs-blue-900 dark:text-white">{meta.title}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                  AI-powered grade entry, weighted calculations, predictive risk, parent/student sync, and report-card automation.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => runAction('Gradebook saved locally and queued for backend sync.')} className="btn-primary flex items-center gap-2 py-2 text-sm"><CheckCircle2 size={16} /> Save updates</button>
+              <button onClick={() => runAction('Advanced gradebook export prepared.')} className="btn-gold flex items-center gap-2 py-2 text-sm"><FileText size={16} /> Export PDF</button>
+            </div>
+          </div>
+        </div>
+
+        {actionMessage && (
+          <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300">
+            {actionMessage}
+          </div>
+        )}
+
+        <AdvancedGradebook
+          courses={courses}
+          students={superAdminStudentPool}
+          selectedCourseId={selectedGradebookCourseId}
+          onSelectCourse={setSelectedGradebookCourseId}
+          onAction={runAction}
+        />
+      </section>
+    )
+  }
+
   return (
     <section className="space-y-6">
       <div className="rounded-2xl border border-kcs-blue-100 bg-white p-5 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
@@ -672,7 +750,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                       </label>
                       <div className="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-gray-600 dark:bg-kcs-blue-950/40 dark:text-gray-300">
                         Auto enrollment
-                        <p className="mt-1 text-lg font-bold text-kcs-blue-900 dark:text-white">{getRosterForGrade(courseDraft.gradeLevels[0]).length}</p>
+                        <p className="mt-1 text-lg font-bold text-kcs-blue-900 dark:text-white">{getRosterForClass(courseDraft.className || courseDraft.gradeLevels[0]).length}</p>
                         <p className="font-normal text-gray-400">official student(s) in selected class</p>
                       </div>
                     </div>
@@ -822,7 +900,7 @@ const TeacherSectionView = ({ segment }: { segment: string }) => {
                   <h3 className="font-bold text-kcs-blue-900 dark:text-white">{student.name}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{student.grade}{student.section} - advisor {student.advisor}</p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(student.risk)}`}>{student.risk} risk</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusTone(student.risk ?? 'low')}`}>{student.risk ?? 'low'} risk</span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                 <div><p className="font-bold text-kcs-blue-900 dark:text-white">{student.average}%</p><p className="text-xs text-gray-500">Average</p></div>

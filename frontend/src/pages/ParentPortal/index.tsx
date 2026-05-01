@@ -121,6 +121,8 @@ type ParentChild = typeof children[number]
 const ParentSectionView = ({ segment, selectedChild }: { segment: string; selectedChild: ParentChild }) => {
   const [bookedEvent, setBookedEvent] = useState<string | null>(null)
   const [messageSent, setMessageSent] = useState(false)
+  const [actionMessage, setActionMessage] = useState('')
+  const [paidInvoices, setPaidInvoices] = useState<string[]>([])
   const childKey = selectedChild.name.split(' ')[0].toLowerCase() as 'elise' | 'david'
   const childFirstName = selectedChild.name.split(' ')[0]
 
@@ -148,8 +150,9 @@ const ParentSectionView = ({ segment, selectedChild }: { segment: string; select
           <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-bold text-kcs-blue-900 dark:text-white">{selectedChild.name} Grades</h2>
-              <button className={parentButton}>Download parent copy</button>
+              <button className={`${parentButton} w-full sm:w-auto`} onClick={() => setActionMessage(`${selectedChild.name}'s parent copy is ready to download.`)}>Download parent copy</button>
             </div>
+            {actionMessage && <p className="mb-4 rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">{actionMessage}</p>}
             <div className="overflow-x-auto">
               <table className="min-w-[620px] w-full text-sm">
                 <thead className="text-left text-xs text-gray-400">
@@ -255,12 +258,21 @@ const ParentSectionView = ({ segment, selectedChild }: { segment: string; select
           {feeAccounts.filter((fee) => fee.family === 'Kabongo Family').map((fee) => (
             <div key={fee.invoice} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{fee.invoice}</p>
-              <p className="mt-2 font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">${fee.balance}</p>
+              <p className="mt-2 font-display text-3xl font-bold text-kcs-blue-900 dark:text-white">${paidInvoices.includes(fee.invoice) ? 0 : fee.balance}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">{fee.student} - due {fee.dueDate}</p>
-              <button className="mt-4 w-full rounded-xl bg-kcs-gold-500 px-4 py-2.5 text-sm font-bold text-kcs-blue-950 hover:bg-kcs-gold-400">Pay / receipt</button>
+              <button
+                className="mt-4 w-full rounded-xl bg-kcs-gold-500 px-4 py-2.5 text-sm font-bold text-kcs-blue-950 hover:bg-kcs-gold-400"
+                onClick={() => {
+                  setPaidInvoices((items) => items.includes(fee.invoice) ? items : [...items, fee.invoice])
+                  setActionMessage(`${fee.invoice} receipt prepared for ${fee.student}.`)
+                }}
+              >
+                {paidInvoices.includes(fee.invoice) ? 'Receipt ready' : 'Pay / receipt'}
+              </button>
             </div>
           ))}
         </div>
+        {actionMessage && <p className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">{actionMessage}</p>}
       </div>
     )
   }
@@ -305,26 +317,26 @@ const ParentPortal = () => {
     <div className="portal-shell flex">
       <PortalSidebar />
 
-      <main>
+      <main className="min-w-0 flex-1">
         {/* Top Bar */}
-        <div className="sticky top-0 z-20 bg-white/80 dark:bg-kcs-blue-950/80 backdrop-blur-md border-b border-gray-100 dark:border-kcs-blue-800 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold font-display text-kcs-blue-900 dark:text-white">
+        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 px-4 py-3 backdrop-blur-md dark:border-kcs-blue-800 dark:bg-kcs-blue-950/90 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-lg font-bold text-kcs-blue-900 dark:text-white sm:text-xl">
                 Welcome, {user?.firstName}! 👨‍👩‍👧‍👦
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:gap-3">
               {/* Child selector */}
-              <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-kcs-blue-700">
+              <div className="flex w-full overflow-hidden rounded-xl border border-gray-200 dark:border-kcs-blue-700 sm:w-auto">
                 {children.map((child) => (
                   <button
                     key={child.id}
                     onClick={() => setSelectedChild(child)}
-                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
                       selectedChild.id === child.id
                         ? 'kcs-gradient text-white'
                         : 'bg-white dark:bg-kcs-blue-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-kcs-blue-800'
@@ -335,7 +347,7 @@ const ParentPortal = () => {
                 ))}
               </div>
               <div className="relative">
-                <button className="p-2 rounded-xl bg-gray-100 dark:bg-kcs-blue-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-kcs-blue-700 transition-colors">
+                <button className="rounded-xl bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-kcs-blue-800 dark:text-gray-300 dark:hover:bg-kcs-blue-700">
                   <Bell size={18} />
                   <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full" />
                 </button>
