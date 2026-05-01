@@ -113,6 +113,33 @@ const PortalSidebar = () => {
     setSidebarOpen(false)
   }, [location.pathname, setSidebarOpen])
 
+  useEffect(() => {
+    return () => {
+      setSidebarOpen(false)
+      document.body.style.overflow = ''
+    }
+  }, [setSidebarOpen])
+
+  useEffect(() => {
+    if (!sidebarOpen) {
+      document.body.style.overflow = ''
+      return
+    }
+
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [sidebarOpen, setSidebarOpen])
+
   if (!user) return null
 
   const navItems = getNavItems(user.role, t)
@@ -189,7 +216,7 @@ const PortalSidebar = () => {
     <>
       <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 lg:hidden">
         <div className="flex h-14 items-center justify-between rounded-[28px] border border-white/70 bg-white/95 px-3 shadow-lg shadow-kcs-blue-950/5 backdrop-blur-md dark:border-kcs-blue-800/80 dark:bg-kcs-blue-950/95">
-        <Link to="/" className="flex min-w-0 items-center gap-3">
+        <Link to="/" onClick={() => setSidebarOpen(false)} className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full kcs-gradient shadow-kcs ring-4 ring-white dark:ring-kcs-blue-900">
             <span className="font-display text-sm font-bold text-white">KCS</span>
           </div>

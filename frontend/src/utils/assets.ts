@@ -8,6 +8,10 @@ export const getBasePath = () => {
     return trimTrailingSlash(configuredBase)
   }
 
+  if (typeof document === 'undefined') {
+    return ''
+  }
+
   const scriptSource = document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src
   const assetsSegment = '/assets/'
 
@@ -24,6 +28,13 @@ export const getBasePath = () => {
 }
 
 export const getAssetUrl = (path: string) => {
+  const cleanPath = trimSlashes(path)
+  const basePath = getBasePath()
+
+  return basePath ? `${basePath}/${cleanPath}` : `/${cleanPath}`
+}
+
+export const getRouteUrl = (path: string) => {
   const cleanPath = trimSlashes(path)
   const basePath = getBasePath()
 

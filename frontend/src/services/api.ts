@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { getRouteUrl } from '@/utils/assets'
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')
 
@@ -36,7 +37,10 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = useAuthStore.getState().refreshToken
+        const { refreshToken, token: currentToken } = useAuthStore.getState()
+        if (currentToken?.startsWith('demo-') || refreshToken?.startsWith('demo-')) {
+          return Promise.reject(error)
+        }
         if (!refreshToken) throw new Error('No refresh token')
 
         const response = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken })
@@ -47,7 +51,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch {
         useAuthStore.getState().logout()
-        window.location.href = '/login'
+        window.location.replace(getRouteUrl('login'))
         return Promise.reject(error)
       }
     }
