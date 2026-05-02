@@ -522,6 +522,11 @@ const buildAdminReportDocument = (
   <style>
     @page { size: A4 landscape; margin: 14mm; }
     * { box-sizing: border-box; }
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+    }
     body {
       margin: 0;
       color: #0f2352;
@@ -535,35 +540,29 @@ const buildAdminReportDocument = (
       border-top: 12px solid #004080;
       overflow: hidden;
     }
-    .sheet::before {
-      content: "KCS NEXUS";
-      position: fixed;
-      inset: 34% auto auto 18%;
+    .watermark-layer {
+      position: absolute;
+      inset: 0;
       z-index: 0;
-      color: rgba(15, 35, 82, 0.035);
-      font-size: 82px;
-      font-weight: 900;
-      letter-spacing: 0.18em;
-      transform: rotate(-22deg);
+      overflow: hidden;
       pointer-events: none;
-      white-space: nowrap;
     }
     .watermark-logo {
-      position: fixed;
+      position: absolute;
       left: 50%;
-      top: 53%;
+      top: 290px;
       z-index: 0;
-      width: 430px;
-      height: 430px;
+      width: 520px;
+      height: 520px;
       object-fit: contain;
-      opacity: 0.055;
+      opacity: 0.045;
       transform: translate(-50%, -50%) rotate(-8deg);
       filter: grayscale(100%);
       pointer-events: none;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .sheet > * { position: relative; z-index: 1; }
+    .sheet > :not(.watermark-layer) { position: relative; z-index: 1; }
     .masthead {
       display: flex;
       align-items: center;
@@ -756,14 +755,18 @@ const buildAdminReportDocument = (
       font-size: 10px;
     }
     @media print {
-      .sheet { padding: 0; border-top-width: 8px; }
+      body { margin: 0; }
+      .sheet { min-height: auto; padding: 0; border-top-width: 8px; }
+      .watermark-logo { top: 275px; width: 500px; height: 500px; opacity: 0.04; }
       .no-print { display: none; }
     }
   </style>
 </head>
 <body>
   <main class="sheet">
-    <img class="watermark-logo" src="${escapeHtml(logoUrl)}" alt="" aria-hidden="true">
+    <div class="watermark-layer" aria-hidden="true">
+      <img class="watermark-logo" src="${escapeHtml(logoUrl)}" alt="">
+    </div>
     <header class="masthead">
       <section class="brand">
         <div class="logo-frame">
