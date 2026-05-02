@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowUpRight, BookOpen, Brain,
-  AlertTriangle, BarChart3, CheckCircle2, Clock3, FileText, GraduationCap, Mail, Megaphone, MessageSquare, Phone, Radio, Search, Shield, Trash2, UserPlus, Users, Video
+  AlertTriangle, BarChart3, CalendarDays, CheckCircle2, Clock3, Download, FileSpreadsheet, FileText, GraduationCap, Mail, Megaphone, MessageSquare, Phone, Radio, Search, Shield, Trash2, UserPlus, Users, Video
 } from 'lucide-react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer,
@@ -87,6 +87,7 @@ const recentActivity = [
 const SCHOOL_NAME = 'Kinshasa Christian School'
 
 const SCHOOL_LOGO_SRC = getAssetUrl('images/kcs-logo.png')
+const SCHOOL_SEAL_SRC = getAssetUrl('images/kcs.jpg')
 
 const liveEventControls = [
   { title: 'Spring Arts Festival', status: 'Live now', platform: 'YouTube Live', audience: '312 viewers', nextStep: 'Monitor comments and stream health' },
@@ -366,6 +367,531 @@ const pillTone = (value: string) => {
 const adminButton = 'rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-kcs-blue-800'
 const adminOutlineButton = 'rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-kcs-blue-700 transition-colors hover:bg-kcs-blue-50 dark:border-kcs-blue-700 dark:text-kcs-blue-200 dark:hover:bg-kcs-blue-800'
 
+type AdminReportCadence = 'daily' | 'weekly' | 'monthly' | 'annual'
+type AdminReportCategory = 'enrollment' | 'academic' | 'operations' | 'executive'
+type AdminReportFormat = 'pdf' | 'excel' | 'csv'
+
+type AdminReportRow = {
+  section: string
+  metric: string
+  value: string | number
+  detail: string
+  action: string
+}
+
+const reportCadenceLabels: Record<AdminReportCadence, string> = {
+  daily: 'Journalier',
+  weekly: 'Hebdomadaire',
+  monthly: 'Mensuel',
+  annual: 'Annuel',
+}
+
+const reportCategoryLabels: Record<AdminReportCategory, string> = {
+  enrollment: 'Inscriptions',
+  academic: 'Academique',
+  operations: 'Operations',
+  executive: 'Rapport complet',
+}
+
+const buildReportWindow = (cadence: AdminReportCadence) => {
+  const end = new Date()
+  const start = new Date(end)
+  if (cadence === 'daily') start.setDate(end.getDate() - 1)
+  if (cadence === 'weekly') start.setDate(end.getDate() - 7)
+  if (cadence === 'monthly') start.setMonth(end.getMonth() - 1)
+  if (cadence === 'annual') start.setFullYear(end.getFullYear() - 1)
+  return {
+    start,
+    end,
+    label: `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`,
+  }
+}
+
+const escapeExportCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`
+
+const escapeHtml = (value: string | number) => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const downloadExportFile = (filename: string, content: string, type: string) => {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+const buildReportRows = (
+  category: AdminReportCategory,
+  cadence: AdminReportCadence,
+  officialRoster: AdminStudentRecord[],
+  admissionRequests: AdminAdmissionRequest[],
+) => {
+  const averageAttendance = Math.round(officialRoster.reduce((sum, student) => sum + student.attendance, 0) / Math.max(officialRoster.length, 1))
+  const averageGpa = (officialRoster.reduce((sum, student) => sum + student.gpa, 0) / Math.max(officialRoster.length, 1)).toFixed(2)
+  const needsAction = officialRoster.filter((student) => getStudentRisk(student) === 'Needs action').length
+  const pendingAdmissions = admissionRequests.filter((item) => item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW').length
+  const acceptedAdmissions = admissionRequests.filter((item) => item.status === 'ACCEPTED').length
+  const openDiscipline = disciplineReports.filter((report) => report.status !== 'Closed').length
+  const unpaidInvoices = feeAccounts.filter((fee) => fee.status !== 'paid').length
+  const cadenceNote = reportCadenceLabels[cadence].toLowerCase()
+  const rows: AdminReportRow[] = []
+
+  if (category === 'enrollment' || category === 'executive') {
+    rows.push(
+      { section: 'Inscriptions', metric: 'Effectif officiel', value: officialRoster.length, detail: `${officialRoster.length} eleves actifs dans le registre super administrateur.`, action: 'Verifier les nouvelles admissions et les classes incompletes.' },
+      { section: 'Inscriptions', metric: 'Dossiers en attente', value: pendingAdmissions, detail: `${pendingAdmissions} demandes necessitent une decision sur la periode ${cadenceNote}.`, action: 'Prioriser les dossiers soumis ou en revue.' },
+      { section: 'Inscriptions', metric: 'Admissions acceptees', value: acceptedAdmissions, detail: `${acceptedAdmissions} candidats ont deja ete acceptes dans le cycle actuel.`, action: 'Confirmer la creation des dossiers officiels.' },
+    )
+  }
+
+  if (category === 'academic' || category === 'executive') {
+    rows.push(
+      { section: 'Academique', metric: 'GPA moyen', value: averageGpa, detail: `Moyenne academique globale calculee sur ${officialRoster.length} dossiers.`, action: 'Examiner les classes et matieres sous la moyenne.' },
+      { section: 'Academique', metric: 'Assiduite moyenne', value: `${averageAttendance}%`, detail: `Presence moyenne pour le rapport ${cadenceNote}.`, action: 'Declencher un suivi parent pour les presences inferieures a 88%.' },
+      { section: 'Academique', metric: 'Eleves a risque', value: needsAction, detail: `${needsAction} eleves combinent risque academique, presence ou discipline.`, action: 'Assigner un plan de soutien et une date de suivi.' },
+    )
+  }
+
+  if (category === 'operations' || category === 'executive') {
+    rows.push(
+      { section: 'Operations', metric: 'Rapports discipline ouverts', value: openDiscipline, detail: `${openDiscipline} rapports demandent encore une resolution administrative.`, action: 'Valider les contacts parents et les mesures correctives.' },
+      { section: 'Operations', metric: 'Factures non soldees', value: unpaidInvoices, detail: `${unpaidInvoices} comptes financiers ne sont pas entierement soldes.`, action: 'Envoyer les releves et organiser les relances.' },
+      { section: 'Operations', metric: 'Alertes IA', value: aiSignals.length, detail: `${aiSignals.length} signaux IA alimentent ce rapport detaille.`, action: 'Revoir les recommandations prioritaires avec les responsables.' },
+    )
+  }
+
+  return rows
+}
+
+const buildAuthenticityCode = (value: string) => {
+  const checksum = Array.from(value).reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) >>> 0, 2166136261)
+  return checksum.toString(36).toUpperCase().padStart(7, '0').slice(0, 7)
+}
+
+const buildAdminReportDocument = (
+  title: string,
+  periodLabel: string,
+  rows: AdminReportRow[],
+  category: AdminReportCategory,
+  cadence: AdminReportCadence,
+) => {
+  const generatedAt = new Date().toLocaleString()
+  const generatedIso = new Date().toISOString()
+  const authenticityCode = buildAuthenticityCode(`${title}|${periodLabel}|${generatedIso}|${rows.map((row) => `${row.section}:${row.metric}:${row.value}`).join('|')}`)
+  const documentId = `KCS-${category.toUpperCase()}-${cadence.toUpperCase()}-${generatedIso.slice(0, 10).replace(/-/g, '')}-${authenticityCode}`
+  const criticalActions = rows.filter((row) => /risque|ouverts|attente|non soldees/i.test(`${row.metric} ${row.detail}`)).length
+  const logoUrl = typeof window === 'undefined' ? SCHOOL_SEAL_SRC : new URL(SCHOOL_SEAL_SRC, window.location.origin).href
+  const escapedRows = rows.map((row) => `
+    <tr>
+      <td><strong>${escapeHtml(row.section)}</strong></td>
+      <td>${escapeHtml(row.metric)}</td>
+      <td class="value">${escapeHtml(row.value)}</td>
+      <td>${escapeHtml(row.detail)}</td>
+      <td>${escapeHtml(row.action)}</td>
+    </tr>
+  `).join('')
+  const securityMarks = [
+    'Reference unique',
+    'Horodatage serveur navigateur',
+    'Controle de coherence',
+    'Usage Super Admin',
+  ]
+  const escapedSecurityMarks = securityMarks.map((mark) => `<span>${escapeHtml(mark)}</span>`).join('')
+  const escapedControls = rows.map((row, index) => `
+    <div class="control-card">
+      <span>${String(index + 1).padStart(2, '0')}</span>
+      <strong>${escapeHtml(row.metric)}</strong>
+      <p>${escapeHtml(row.action)}</p>
+    </div>
+  `).join('')
+
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page { size: A4 landscape; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #0f2352;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+    }
+    .sheet {
+      position: relative;
+      min-height: 100vh;
+      padding: 28px;
+      border-top: 12px solid #004080;
+      overflow: hidden;
+    }
+    .sheet::before {
+      content: "KCS NEXUS";
+      position: fixed;
+      inset: 34% auto auto 18%;
+      z-index: 0;
+      color: rgba(15, 35, 82, 0.035);
+      font-size: 82px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      transform: rotate(-22deg);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .watermark-logo {
+      position: fixed;
+      left: 50%;
+      top: 53%;
+      z-index: 0;
+      width: 430px;
+      height: 430px;
+      object-fit: contain;
+      opacity: 0.055;
+      transform: translate(-50%, -50%) rotate(-8deg);
+      filter: grayscale(100%);
+      pointer-events: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet > * { position: relative; z-index: 1; }
+    .masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #d8a11d;
+    }
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .logo-frame {
+      width: 86px;
+      height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #d8a11d;
+      border-radius: 999px;
+      background: #ffffff;
+      box-shadow: 0 0 0 5px #f8fbff, 0 0 0 6px #dbe3ef;
+      overflow: hidden;
+      flex: 0 0 86px;
+    }
+    .logo {
+      width: calc(100% - 8px);
+      height: calc(100% - 8px);
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      border-radius: 999px;
+    }
+    .school { margin: 0; color: #004080; font-size: 25px; line-height: 1.1; }
+    .tagline { margin: 5px 0 0; color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    .badge {
+      min-width: 230px;
+      border-radius: 8px;
+      background: #0f2352;
+      color: #ffffff;
+      padding: 14px 18px;
+      text-align: right;
+      border-bottom: 4px solid #d8a11d;
+    }
+    .badge strong { display: block; color: #f5c542; font-size: 13px; text-transform: uppercase; }
+    .badge span { display: block; margin-top: 4px; font-size: 12px; }
+    .badge small { display: block; margin-top: 8px; color: #dbeafe; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; }
+    h1 { margin: 24px 0 8px; font-size: 22px; line-height: 1.25; color: #0f2352; }
+    .security-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0 0;
+      padding: 9px;
+      border: 1px solid #c7d2fe;
+      border-left: 6px solid #004080;
+      background: repeating-linear-gradient(135deg, #eef6ff 0, #eef6ff 8px, #ffffff 8px, #ffffff 16px);
+    }
+    .security-strip span {
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #ffffff;
+      padding: 5px 9px;
+      color: #0f2352;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin: 18px 0 22px;
+    }
+    .meta-card {
+      border: 1px solid #dbe3ef;
+      border-left: 5px solid #d8a11d;
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #f8fbff;
+    }
+    .meta-card span { display: block; color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .meta-card strong { display: block; margin-top: 4px; color: #0f2352; font-size: 13px; }
+    .overview {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      margin: 0 0 18px;
+    }
+    .panel {
+      border: 1px solid #dbe3ef;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 14px;
+    }
+    .panel h2 {
+      margin: 0 0 8px;
+      color: #004080;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .panel p { margin: 0; color: #334155; font-size: 11px; line-height: 1.55; }
+    .assurance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .assurance {
+      min-height: 64px;
+      border: 1px solid #dbe3ef;
+      border-radius: 8px;
+      padding: 9px;
+      background: #f8fbff;
+    }
+    .assurance strong { display: block; color: #0f2352; font-size: 11px; }
+    .assurance span { display: block; margin-top: 5px; color: #64748b; font-size: 9px; line-height: 1.35; }
+    .section-title {
+      margin: 18px 0 8px;
+      color: #004080;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #dbe3ef; padding: 10px; text-align: left; vertical-align: top; font-size: 11px; line-height: 1.35; }
+    th { background: #004080; color: #ffffff; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
+    tr:nth-child(even) td { background: #f8fbff; }
+    .value { color: #004080; font-size: 16px; font-weight: 800; white-space: nowrap; }
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .control-card {
+      border: 1px solid #dbe3ef;
+      border-radius: 8px;
+      padding: 10px;
+      background: #ffffff;
+    }
+    .control-card span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #0f2352;
+      color: #f5c542;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .control-card strong { display: block; margin-top: 8px; color: #0f2352; font-size: 11px; }
+    .control-card p { margin: 5px 0 0; color: #475569; font-size: 10px; line-height: 1.4; }
+    .signature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 0.7fr;
+      gap: 36px;
+      margin-top: 32px;
+    }
+    .signature {
+      border-top: 1px solid #94a3b8;
+      padding-top: 8px;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .stamp {
+      min-height: 86px;
+      border: 2px solid #d8a11d;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #004080;
+      font-size: 10px;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      transform: rotate(-6deg);
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #dbe3ef;
+      color: #64748b;
+      font-size: 10px;
+    }
+    @media print {
+      .sheet { padding: 0; border-top-width: 8px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <img class="watermark-logo" src="${escapeHtml(logoUrl)}" alt="" aria-hidden="true">
+    <header class="masthead">
+      <section class="brand">
+        <div class="logo-frame">
+          <img class="logo" src="${escapeHtml(logoUrl)}" alt="Logo ${escapeHtml(SCHOOL_NAME)}">
+        </div>
+        <div>
+          <p class="school">${escapeHtml(SCHOOL_NAME)}</p>
+          <p class="tagline">Official Super Admin Report</p>
+        </div>
+      </section>
+      <aside class="badge">
+        <strong>Document officiel</strong>
+        <span>Dashboard Super Administrateur</span>
+        <small>${escapeHtml(documentId)}</small>
+      </aside>
+    </header>
+
+    <h1>${escapeHtml(title)}</h1>
+    <section class="security-strip">${escapedSecurityMarks}</section>
+    <section class="meta-grid">
+      <div class="meta-card"><span>Periode</span><strong>${escapeHtml(periodLabel)}</strong></div>
+      <div class="meta-card"><span>Frequence</span><strong>${escapeHtml(reportCadenceLabels[cadence])}</strong></div>
+      <div class="meta-card"><span>Type</span><strong>${escapeHtml(reportCategoryLabels[category])}</strong></div>
+      <div class="meta-card"><span>Generation</span><strong>${escapeHtml(generatedAt)}</strong></div>
+      <div class="meta-card"><span>Authenticite</span><strong>${escapeHtml(authenticityCode)}</strong></div>
+    </section>
+
+    <section class="overview">
+      <div class="panel">
+        <h2>Resume executif</h2>
+        <p>Ce rapport consolide ${escapeHtml(rows.length)} indicateurs pour la periode ${escapeHtml(periodLabel)}. Il met en evidence les donnees du registre, les points de suivi operationnel et les actions administratives a traiter. Les priorites signalees ci-dessous servent de base aux controles de direction et aux decisions du Super Administrateur.</p>
+      </div>
+      <div class="panel">
+        <h2>Surete documentaire</h2>
+        <div class="assurance-grid">
+          <div class="assurance"><strong>ID</strong><span>${escapeHtml(documentId)}</span></div>
+          <div class="assurance"><strong>Alertes</strong><span>${escapeHtml(criticalActions)} controle(s) a surveiller.</span></div>
+          <div class="assurance"><strong>Statut</strong><span>Document confidentiel, usage administratif interne.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <p class="section-title">Indicateurs detailles</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Section</th>
+          <th>Indicateur</th>
+          <th>Valeur</th>
+          <th>Detail</th>
+          <th>Action recommandee</th>
+        </tr>
+      </thead>
+      <tbody>${escapedRows}</tbody>
+    </table>
+
+    <p class="section-title">Plan de controle et d'authenticite</p>
+    <section class="control-grid">${escapedControls}</section>
+
+    <section class="signature-row">
+      <div class="signature">Direction / Super Administrateur</div>
+      <div class="signature">Cachet de l'ecole</div>
+      <div class="stamp">Verifie<br>${escapeHtml(authenticityCode)}</div>
+    </section>
+    <footer class="footer">
+      <span>${escapeHtml(SCHOOL_NAME)} - Rapport genere depuis KCS Nexus - ${escapeHtml(documentId)}</span>
+      <span>Confidentiel - authenticite: ${escapeHtml(authenticityCode)}</span>
+    </footer>
+  </main>
+  <script>
+    function printWhenReady() {
+      var images = Array.prototype.slice.call(document.images || []);
+      var pending = images.filter(function (image) { return !image.complete; });
+      var waitForImages = pending.map(function (image) {
+        return new Promise(function (resolve) {
+          image.onload = resolve;
+          image.onerror = resolve;
+        });
+      });
+
+      Promise.all(waitForImages).then(function () {
+        window.focus();
+        window.print();
+      });
+    }
+
+    window.addEventListener('load', function () {
+      setTimeout(printWhenReady, 250);
+    });
+  </script>
+</body>
+</html>`
+}
+
+const exportAdminReport = (
+  category: AdminReportCategory,
+  cadence: AdminReportCadence,
+  format: AdminReportFormat,
+  officialRoster: AdminStudentRecord[],
+  admissionRequests: AdminAdmissionRequest[],
+) => {
+  const rows = buildReportRows(category, cadence, officialRoster, admissionRequests)
+  const period = buildReportWindow(cadence)
+  const title = `${SCHOOL_NAME} - ${reportCategoryLabels[category]} - ${reportCadenceLabels[cadence]}`
+  const filename = `kcs-${category}-${cadence}-${new Date().toISOString().slice(0, 10)}`
+
+  if (format === 'csv') {
+    const csv = [
+      ['Section', 'Indicateur', 'Valeur', 'Detail', 'Action'].map(escapeExportCell).join(','),
+      ...rows.map((row) => [row.section, row.metric, row.value, row.detail, row.action].map(escapeExportCell).join(',')),
+    ].join('\n')
+    downloadExportFile(`${filename}.csv`, csv, 'text/csv;charset=utf-8')
+    return
+  }
+
+  const html = buildAdminReportDocument(title, period.label, rows, category, cadence)
+
+  if (format === 'excel') {
+    downloadExportFile(`${filename}.xls`, html, 'application/vnd.ms-excel;charset=utf-8')
+    return
+  }
+
+  const printWindow = window.open('', '_blank', 'width=1100,height=800')
+  if (!printWindow) return
+  printWindow.document.write(html)
+  printWindow.document.close()
+}
+
 const AdminSectionView = ({
   segment,
   officialRoster,
@@ -390,6 +916,8 @@ const AdminSectionView = ({
   const [apiSynced, setApiSynced] = useState(false)
   const [showCreateStudent, setShowCreateStudent] = useState(false)
   const [selectedTranscriptId, setSelectedTranscriptId] = useState('')
+  const [reportCadence, setReportCadence] = useState<AdminReportCadence>('weekly')
+  const [reportCategory, setReportCategory] = useState<AdminReportCategory>('executive')
   const [newStudent, setNewStudent] = useState({
     name: '',
     studentNumber: '',
@@ -1206,20 +1734,125 @@ const AdminSectionView = ({
   }
 
   if (segment === 'reports') {
+    const reportRows = buildReportRows(reportCategory, reportCadence, officialRoster, admissionRequests)
+    const reportWindow = buildReportWindow(reportCadence)
+    const reportStats = [
+      { label: 'Periode', value: reportCadenceLabels[reportCadence], detail: reportWindow.label, icon: CalendarDays },
+      { label: 'Indicateurs', value: String(reportRows.length), detail: reportCategoryLabels[reportCategory], icon: BarChart3 },
+      { label: 'Eleves a risque', value: String(officialRoster.filter((student) => getStudentRisk(student) === 'Needs action').length), detail: 'academique, presence ou discipline', icon: AlertTriangle },
+      { label: 'Exports', value: 'PDF XLS CSV', detail: 'telechargement ou impression', icon: Download },
+    ]
+
     return (
-      <div className="grid gap-6 xl:grid-cols-3">
-        {[
-          ['Enrollment report', 'Students, admissions, grade growth, family status'],
-          ['Academic report', 'Grades, report cards, transcripts, risk flags'],
-          ['Operations report', 'Finance, staff attendance, discipline, communications'],
-        ].map(([title, detail]) => (
-          <div key={title} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
-            <FileText className="text-kcs-blue-600 dark:text-kcs-blue-300" />
-            <p className="mt-4 font-display text-xl font-bold text-kcs-blue-900 dark:text-white">{title}</p>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{detail}</p>
-            <button className="mt-4 w-full rounded-xl bg-kcs-blue-700 px-4 py-2.5 text-sm font-semibold text-white">Generate report</button>
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-kcs-blue-700 dark:text-kcs-blue-300">
+                <FileText size={20} />
+                <span className="text-xs font-bold uppercase tracking-wide">Super Admin Reports</span>
+              </div>
+              <h2 className="mt-2 font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">Rapports detailles exportables</h2>
+              <p className="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">
+                Generer des rapports journaliers, hebdomadaires, mensuels ou annuels avec les donnees d'inscriptions, d'academique, d'operations, de finances, de discipline et d'alertes IA.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[520px]">
+              <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Frequence
+                <select value={reportCadence} onChange={(event) => setReportCadence(event.target.value as AdminReportCadence)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-kcs-blue-900 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {Object.entries(reportCadenceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Type de rapport
+                <select value={reportCategory} onChange={(event) => setReportCategory(event.target.value as AdminReportCategory)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-kcs-blue-900 dark:border-kcs-blue-700 dark:bg-kcs-blue-950 dark:text-white">
+                  {Object.entries(reportCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+            </div>
           </div>
-        ))}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {reportStats.map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.label} className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/30 dark:text-kcs-blue-300">
+                  <Icon size={18} />
+                </div>
+                <p className="font-display text-2xl font-bold text-kcs-blue-900 dark:text-white">{item.value}</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">{item.label}</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{item.detail}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-bold text-kcs-blue-900 dark:text-white">{reportCategoryLabels[reportCategory]} - {reportCadenceLabels[reportCadence]}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Periode couverte: {reportWindow.label}</p>
+              </div>
+              <span className="w-fit rounded-full bg-kcs-gold-100 px-3 py-1.5 text-xs font-bold text-kcs-blue-900 dark:bg-kcs-gold-900/30 dark:text-kcs-gold-200">Pret pour audit</span>
+            </div>
+            <div className="-mx-1 overflow-x-auto px-1">
+              <table className="min-w-full divide-y divide-gray-100 text-left text-sm dark:divide-kcs-blue-800">
+                <thead className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <tr>
+                    <th className="py-3 pr-4">Section</th>
+                    <th className="py-3 pr-4">Indicateur</th>
+                    <th className="py-3 pr-4">Valeur</th>
+                    <th className="py-3 pr-4">Action recommandee</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-kcs-blue-800">
+                  {reportRows.map((row) => (
+                    <tr key={`${row.section}-${row.metric}`}>
+                      <td className="py-3 pr-4 font-semibold text-kcs-blue-900 dark:text-white">{row.section}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{row.metric}<p className="mt-1 text-xs text-gray-400">{row.detail}</p></td>
+                      <td className="py-3 pr-4 font-display text-lg font-bold text-kcs-blue-800 dark:text-kcs-blue-200">{row.value}</td>
+                      <td className="py-3 pr-4 text-gray-600 dark:text-gray-300">{row.action}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Exporter le rapport</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Le PDF s'ouvre en impression afin de choisir "Enregistrer en PDF"; Excel et CSV sont telecharges directement.</p>
+              <div className="mt-4 grid gap-3">
+                <button className={`${adminButton} flex items-center justify-center gap-2`} onClick={() => exportAdminReport(reportCategory, reportCadence, 'pdf', officialRoster, admissionRequests)}>
+                  <FileText size={16} /> PDF
+                </button>
+                <button className={`${adminOutlineButton} flex items-center justify-center gap-2`} onClick={() => exportAdminReport(reportCategory, reportCadence, 'excel', officialRoster, admissionRequests)}>
+                  <FileSpreadsheet size={16} /> Excel
+                </button>
+                <button className={`${adminOutlineButton} flex items-center justify-center gap-2`} onClick={() => exportAdminReport(reportCategory, reportCadence, 'csv', officialRoster, admissionRequests)}>
+                  <Download size={16} /> CSV
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+              <h3 className="font-bold text-kcs-blue-900 dark:text-white">Contenu inclus</h3>
+              <div className="mt-3 space-y-3">
+                {['Registre officiel des eleves', 'Admissions et decisions', 'Notes, presences et risques', 'Finances, discipline et audit IA'].map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 dark:bg-kcs-blue-800/30">
+                    <CheckCircle2 size={16} className="mt-0.5 text-green-600 dark:text-green-300" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
