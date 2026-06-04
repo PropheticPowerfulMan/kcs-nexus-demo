@@ -37,6 +37,7 @@ jobs:
         working-directory: frontend
         env:
           GITHUB_PAGES: "true"
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: npm run build
 
       - name: Prepare GitHub Pages fallback files
