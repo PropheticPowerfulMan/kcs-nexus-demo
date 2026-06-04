@@ -21,7 +21,7 @@ const Footer = () => {
   ]
 
   const programs = [
-    { to: '/academics#kindergarten', label: 'K1-K5' },
+    { to: '/academics#kindergarten', label: 'K3-K5' },
     { to: '/academics#elementary', label: 'Elementary' },
     { to: '/academics#middle', label: 'Middle School' },
     { to: '/academics#high', label: 'High School' },
@@ -44,9 +44,9 @@ const Footer = () => {
   ]
 
   return (
-    <footer className="bg-kcs-blue-950 dark:bg-gray-950 text-white">
+    <footer className="public-footer bg-kcs-blue-950 dark:bg-gray-950 text-white">
       {/* CTA Banner */}
-      <div className="bg-gradient-to-r from-kcs-blue-700 via-kcs-blue-600 to-kcs-blue-800 py-12">
+      <div className="public-footer-cta bg-gradient-to-r from-kcs-blue-700 via-kcs-blue-600 to-kcs-blue-800 py-12">
         <div className="container-custom">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
@@ -60,14 +60,14 @@ const Footer = () => {
             <div className="flex gap-3">
               <Link
                 to="/admissions"
-                className="flex items-center gap-2 bg-kcs-gold-500 hover:bg-kcs-gold-400 text-kcs-blue-900 font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-gold"
+                className="public-footer-primary flex items-center gap-2 bg-kcs-gold-500 hover:bg-kcs-gold-400 text-kcs-blue-900 font-bold px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-gold"
               >
                 Apply Now
                 <ArrowRight size={18} />
               </Link>
               <Link
                 to="/contact"
-                className="flex items-center gap-2 border-2 border-white/30 hover:border-white text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300"
+                className="public-footer-secondary flex items-center gap-2 border-2 border-white/30 hover:border-white text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300"
               >
                 Contact Us
               </Link>
@@ -192,7 +192,7 @@ const Footer = () => {
                   Accredited By
                 </p>
                 <p className="text-kcs-blue-200 text-sm font-medium">
-                  K1-K5, Grade 1-Grade 5, Grade 6-Grade 8, and Grade 9-Grade 12
+                  K3-K5, Grade 1-Grade 5, Grade 6-Grade 8, and Grade 9-Grade 12
                 </p>
                 <p className="text-kcs-blue-300 text-xs mt-1">
                   Faith-based learning with a biblical worldview

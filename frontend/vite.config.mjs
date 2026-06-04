@@ -1,7 +1,9 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path from 'node:path'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const devApiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET || 'http://localhost:5000'
 
 const getBasePath = () => {

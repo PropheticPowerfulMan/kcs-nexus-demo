@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   Bell, BookOpen, Brain, Calendar, CheckCircle2, ClipboardList,
-  Download, FileText, MessageSquare, Search, Settings, Shield,
+  Download, FileText, MessageSquare, Settings, Shield,
   UserCheck, Users
 } from 'lucide-react'
+import SearchField from '@/components/shared/SearchField'
 
 type SectionConfig = {
   title: string
@@ -79,14 +80,6 @@ const sectionMap: Record<string, SectionConfig> = {
     primaryAction: 'Update permissions',
     secondaryAction: 'View audit log',
     items: ['Super Admin - full access', 'Staff - records and communication permissions', 'Sensitive updates require approval'],
-  },
-  registry: {
-    title: 'Family Registry',
-    description: 'Link parents to children, verify documents, and maintain household communication records.',
-    icon: Users,
-    primaryAction: 'Link family',
-    secondaryAction: 'Export registry',
-    items: ['Kabongo family - 2 children linked', 'Mwamba family - documents verified', 'Admissions family - pending link'],
   },
   'forum-insights': {
     title: 'Parent AI Report',
@@ -222,10 +215,10 @@ const PortalSectionPanel = () => {
   }
 
   return (
-    <section className="rounded-2xl border border-kcs-blue-100 bg-white p-5 shadow-sm dark:border-kcs-blue-800 dark:bg-kcs-blue-900/50">
+    <section className="nexus-glass-card rounded-2xl p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-kcs-blue-50 text-kcs-blue-700 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/60 text-kcs-blue-700 shadow-inner shadow-white/50 backdrop-blur-xl dark:border-white/10 dark:bg-kcs-blue-900/40 dark:text-kcs-blue-300 dark:shadow-none">
             <Icon size={22} />
           </div>
           <div>
@@ -244,13 +237,10 @@ const PortalSectionPanel = () => {
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <label className="relative block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input className="input-kcs pl-10" placeholder={`Search ${section.title.toLowerCase()}`} />
-        </label>
+        <SearchField placeholder={`Search ${section.title.toLowerCase()}`} inputClassName="text-sm" />
         <div className="grid gap-2 sm:grid-cols-3">
           {['Loading state ready', 'Error handling ready', 'Audit trail ready'].map((status) => (
-            <div key={status} className="rounded-xl bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 dark:bg-kcs-blue-800/30 dark:text-gray-300">
+            <div key={status} className="rounded-xl border border-white/60 bg-white/50 px-3 py-2 text-xs font-semibold text-gray-600 backdrop-blur-xl dark:border-white/10 dark:bg-kcs-blue-800/30 dark:text-gray-300">
               {status}
             </div>
           ))}
@@ -265,7 +255,7 @@ const PortalSectionPanel = () => {
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {section.items.map((item) => (
-          <div key={item} className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700 dark:border-kcs-blue-800 dark:bg-kcs-blue-800/30 dark:text-gray-300">
+          <div key={item} className="rounded-xl border border-white/60 bg-white/50 p-4 text-sm text-gray-700 shadow-inner shadow-white/40 backdrop-blur-xl dark:border-white/10 dark:bg-kcs-blue-800/30 dark:text-gray-300 dark:shadow-none">
             {item}
           </div>
         ))}

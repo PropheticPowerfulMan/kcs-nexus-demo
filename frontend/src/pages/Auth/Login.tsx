@@ -1,20 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, LogIn, Mail, ShieldCheck } from 'lucide-react'
-import { authAPI } from '@/services/api'
+import { CheckCircle2, Eye, EyeOff, KeyRound, Lock, LogIn, Mail, Send, ShieldCheck, X } from 'lucide-react'
+import { API_BASE, authAPI } from '@/services/api'
 import { useAuthStore } from '@/store/authStore'
 import type { User, UserRole } from '@/types'
 
 const loginSchema = z.object({
-  email: z.string().email('Valid email required'),
+  email: z.string().min(1, 'Email ou code d\'accès requis'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
+
+const resetSchema = z.object({
+  email: z.string().optional(),
+  token: z.string().optional(),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+}).superRefine((value, ctx) => {
+  if (!value.token?.trim()) {
+    if (!value.email?.trim() || !z.string().email().safeParse(value.email).success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Enter a valid email address', path: ['email'] })
+    }
+    return
+  }
+  if (!value.password || value.password.length < 8) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Password must be at least 8 characters', path: ['password'] })
+  }
+  if (value.password !== value.confirmPassword) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Passwords do not match', path: ['confirmPassword'] })
+  }
+})
+
+type ResetFormValues = z.infer<typeof resetSchema>
 
 type DemoAccount = {
   email: string
@@ -54,6 +76,7 @@ const findDemoAccount = (values: LoginFormValues) => {
 const buildDemoUser = (account: DemoAccount): User => ({
   id: account.role + '-demo',
   email: account.email,
+  accessCode: `ACC-${account.role.slice(0, 3).toUpperCase()}-DEMO`,
   firstName: account.firstName,
   lastName: account.lastName,
   role: account.role,
@@ -61,11 +84,35 @@ const buildDemoUser = (account: DemoAccount): User => ({
   updatedAt: new Date().toISOString(),
 })
 
+const getLoginErrorMessage = (err: any) => {
+  if (err?.response?.data?.message) {
+    return `Erreur API: ${err.response.data.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
+  }
+
+  if (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error') {
+    return `Erreur réseau : KCS Nexus n'arrive pas à joindre son API (${API_BASE}). Lancez le backend KCS Nexus, puis vérifiez que EDUPAY_API_URL pointe vers EduPay API et que SAVANEX_API_URL pointe vers SAVANEX pour accepter les identifiants créés dans les autres applications.`
+  }
+
+  if (err?.code === 'ECONNABORTED') {
+    return `Erreur réseau : la connexion à l'API KCS Nexus (${API_BASE}) a expiré. Vérifiez que KCS Nexus Backend, EduPay API, SAVANEX et KCS Orbit sont démarrés.`
+  }
+
+  if (err?.message) {
+    return `Erreur: ${err.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
+  }
+
+  return 'Login failed. Use one of the demo accounts or connect the backend auth service.'
+}
+
 const LoginPage = () => {
   const navigate = useNavigate()
   const { login, logout, user, isAuthenticated, setLoading, isLoading } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetMessage, setResetMessage] = useState('')
+  const [resetError, setResetError] = useState('')
+  const [resetSubmitting, setResetSubmitting] = useState(false)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -75,19 +122,56 @@ const LoginPage = () => {
     },
   })
 
+  const resetForm = useForm<ResetFormValues>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: {
+      email: '',
+      token: '',
+      password: '',
+      confirmPassword: '',
+    },
+  })
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const resetToken = params.get('resetToken')
+    if (resetToken) {
+      resetForm.setValue('token', resetToken)
+      setResetOpen(true)
+    }
+  }, [resetForm])
+
   const resolveDestination = (role: UserRole) => {
     return role === 'admin' ? '/admin' : `/portal/${role}`
   }
 
-  const handleSuccessfulLogin = (user: User) => {
+  const handleDemoLogin = (user: User) => {
     logout()
     login(user, 'demo-access-token', 'demo-refresh-token')
     navigate(resolveDestination(user.role), { replace: true })
   }
 
-  const enterSuperAdmin = () => {
+  const handleApiLogin = async (values: LoginFormValues) => {
+    const response = await authAPI.login(values.email.trim(), values.password)
+    const data = response.data?.data
+    if (!data?.user || !data?.token || !data?.refreshToken) {
+      throw new Error('Invalid authentication response')
+    }
+    logout()
+    login(data.user, data.token, data.refreshToken)
+    navigate(resolveDestination(data.user.role), { replace: true })
+  }
+
+  const enterSuperAdmin = async () => {
+    setLoading(true)
     setErrorMessage('')
-    handleSuccessfulLogin(buildDemoUser(superAdminAccount))
+    try {
+      await handleApiLogin({ email: superAdminAccount.email, password: superAdminAccount.password })
+    } catch {
+      handleDemoLogin(buildDemoUser(superAdminAccount))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -95,35 +179,45 @@ const LoginPage = () => {
     setErrorMessage('')
 
     try {
-      const demoAccount = findDemoAccount(values)
-      if (demoAccount) {
-        handleSuccessfulLogin(buildDemoUser(demoAccount))
-        return
-      }
-
-      const response = await authAPI.login(values.email.trim(), values.password)
-      const data = response.data?.data
-      if (!data?.user || !data?.token || !data?.refreshToken) {
-        throw new Error('Invalid authentication response')
-      }
-      login(data.user, data.token, data.refreshToken)
-      navigate(resolveDestination(data.user.role), { replace: true })
+      await handleApiLogin(values)
     } catch (err: any) {
       const demoAccount = findDemoAccount(values)
       if (demoAccount) {
-        handleSuccessfulLogin(buildDemoUser(demoAccount))
+        handleDemoLogin(buildDemoUser(demoAccount))
       } else {
-        // Afficher l’erreur réelle du backend si disponible
-        let message = 'Login failed. Use one of the demo accounts or connect the backend auth service.'
-        if (err?.response?.data?.message) {
-          message = `Erreur API: ${err.response.data.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
-        } else if (err?.message) {
-          message = `Erreur: ${err.message}. Pour le Super Admin demo, utilisez superadmin@kcsnexus.com / SuperAdmin123!.`
-        }
-        setErrorMessage(message)
+        setErrorMessage(getLoginErrorMessage(err))
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const openPasswordReset = () => {
+    resetForm.setValue('email', form.getValues('email') || '')
+    setResetMessage('')
+    setResetError('')
+    setResetOpen(true)
+  }
+
+  const handlePasswordReset = async (values: ResetFormValues) => {
+    setResetSubmitting(true)
+    setResetMessage('')
+    setResetError('')
+
+    try {
+      if (values.token?.trim()) {
+        await authAPI.resetPassword(values.token.trim(), values.password || '')
+        setResetMessage('Password updated. You can sign in with the new password.')
+        resetForm.reset({ email: values.email, token: '', password: '', confirmPassword: '' })
+        window.history.replaceState({}, document.title, window.location.pathname)
+      } else {
+        await authAPI.forgotPassword((values.email || '').trim())
+        setResetMessage('If this account exists, a secure reset link has been sent.')
+      }
+    } catch (err: any) {
+      setResetError(err?.response?.data?.message || 'Password reset is temporarily unavailable.')
+    } finally {
+      setResetSubmitting(false)
     }
   }
 
@@ -185,7 +279,7 @@ const LoginPage = () => {
               <div className="mt-10 mb-8">
                 <h2 className="text-3xl font-bold font-display text-kcs-blue-900 dark:text-white">Sign In</h2>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Use your KCS credentials or one of the demo accounts.
+                  Use your email, access code, or one of the demo accounts.
                 </p>
               </div>
 
@@ -203,10 +297,10 @@ const LoginPage = () => {
 
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Email</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Email ou code d'accès</label>
                   <div className="relative">
                     <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input {...form.register('email')} className="input-kcs pl-11" placeholder="name@kcsnexus.edu" />
+                    <input {...form.register('email')} className="input-kcs pl-11" placeholder="name@kcsnexus.edu ou ACC-ADM-SUPER1" />
                   </div>
                   {form.formState.errors.email && <p className="mt-1 text-xs text-red-500">{form.formState.errors.email.message}</p>}
                 </div>
@@ -236,7 +330,7 @@ const LoginPage = () => {
                   <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                     <input type="checkbox" className="accent-kcs-blue-600" /> Remember me
                   </label>
-                  <button type="button" className="font-medium text-kcs-blue-600 dark:text-kcs-blue-400">
+                  <button type="button" onClick={openPasswordReset} className="font-medium text-kcs-blue-600 dark:text-kcs-blue-400">
                     Forgot password?
                   </button>
                 </div>
@@ -284,6 +378,82 @@ const LoginPage = () => {
           </motion.div>
         </div>
       </div>
+
+      {resetOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kcs-blue-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Password reset">
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-white p-6 shadow-2xl dark:bg-kcs-blue-950"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-kcs-blue-100 text-kcs-blue-700 dark:bg-kcs-blue-900 dark:text-kcs-blue-200">
+                  <KeyRound size={20} />
+                </div>
+                <h3 className="mt-4 text-xl font-bold text-kcs-blue-900 dark:text-white">Reset password</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Enter your email to receive a secure link, or paste the token from the link to set a new password.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetOpen(false)}
+                className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-kcs-blue-700 dark:hover:bg-kcs-blue-900"
+                aria-label="Close password reset"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {resetMessage && (
+              <div className="mt-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200">
+                <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0" />
+                <span>{resetMessage}</span>
+              </div>
+            )}
+
+            {resetError && (
+              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                {resetError}
+              </div>
+            )}
+
+            <form onSubmit={resetForm.handleSubmit(handlePasswordReset)} className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Email</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input {...resetForm.register('email')} className="input-kcs pl-11" placeholder="name@kcsnexus.edu" />
+                </div>
+                {resetForm.formState.errors.email && <p className="mt-1 text-xs text-red-500">{resetForm.formState.errors.email.message}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Reset token</label>
+                <input {...resetForm.register('token')} className="input-kcs" placeholder="Paste token from email link" />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">New password</label>
+                  <input {...resetForm.register('password')} type="password" className="input-kcs" placeholder="8+ characters" />
+                  {resetForm.formState.errors.password && <p className="mt-1 text-xs text-red-500">{resetForm.formState.errors.password.message}</p>}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-300">Confirm</label>
+                  <input {...resetForm.register('confirmPassword')} type="password" className="input-kcs" placeholder="Repeat password" />
+                  {resetForm.formState.errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{resetForm.formState.errors.confirmPassword.message}</p>}
+                </div>
+              </div>
+
+              <button type="submit" disabled={resetSubmitting} className="btn-primary flex w-full items-center justify-center gap-2 py-3 disabled:opacity-60">
+                <Send size={16} /> {resetSubmitting ? 'Processing...' : 'Continue'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

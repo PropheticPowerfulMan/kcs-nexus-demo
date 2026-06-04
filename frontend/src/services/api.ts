@@ -2,7 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
 import { getRouteUrl } from '@/utils/assets'
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')
+export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')
 
 export const api = axios.create({
   baseURL: API_BASE,
@@ -32,6 +32,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    const skipAuthLogout = originalRequest?.headers?.['x-skip-auth-logout'] === 'true'
+
+    if (error.response?.status === 401 && skipAuthLogout) {
+      return Promise.reject(error)
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
@@ -62,8 +67,8 @@ api.interceptors.response.use(
 
 // --- Auth API ---
 export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
+  login: (identifier: string, password: string) =>
+    api.post('/auth/login', { email: identifier, password }),
   register: (data: object) =>
     api.post('/auth/register', data),
   googleAuth: (token: string) =>
@@ -98,7 +103,7 @@ export const eventsAPI = {
 
 // --- Students API ---
 export const studentsAPI = {
-  getAll: (params?: object) => api.get('/students', { params }),
+  getAll: (params?: object, config?: object) => api.get('/students', { params, ...config }),
   getById: (id: string) => api.get(`/students/${id}`),
   create: (data: object) => api.post('/students', data),
   getGrades: (id: string) => api.get(`/students/${id}/grades`),
@@ -112,6 +117,10 @@ export const studentsAPI = {
 // --- Registry API ---
 export const registryAPI = {
   getFamilies: () => api.get('/registry/families'),
+  getDirectory: () => api.get('/registry/directory'),
+  createEntity: (entityType: 'parent' | 'student' | 'teacher', data: object) => api.post(`/registry/entities/${entityType}`, data),
+  updateEntity: (entityType: 'parent' | 'student' | 'teacher', identifier: string, data: object, identifierType: 'orbitId' | 'externalId' = 'orbitId') => api.patch(`/registry/entities/${entityType}/${identifier}`, data, { params: { identifierType } }),
+  deleteEntity: (entityType: 'parent' | 'student' | 'teacher', identifier: string, identifierType: 'orbitId' | 'externalId' = 'orbitId') => api.delete(`/registry/entities/${entityType}/${identifier}`, { params: { identifierType } }),
   registerFamily: (data: object) => api.post('/registry/families', data),
 }
 
